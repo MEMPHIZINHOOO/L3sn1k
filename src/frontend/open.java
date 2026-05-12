@@ -15,15 +15,11 @@ import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
+import App;
+
 
 public class Init {
 
-
-    public class Selection_State {
-    public boolean TEMPORARY_PROJECT;
-    public boolean EXISTING_PROJECT;
-    public boolean OPEN_PROJECT;
-    }
 
     public static void main(String[] args) {
         EventQueue.invokeLater(() -> {
@@ -42,6 +38,8 @@ public class Init {
             JRadioButton b2 = new JRadioButton("New Project on Disk");
             JRadioButton b3 = new JRadioButton("Open Existing Project");
 
+            // default parameter sent to Projects
+            String selectedOption = "Temporary Project";
             ButtonGroup group = new ButtonGroup();
             group.add(b1);
             group.add(b2);
@@ -94,12 +92,19 @@ public class Init {
             b1.addActionListener(e -> {
                 newProjectPanel.setVisible(false);
                 openProjectPanel.setVisible(false);
+                //probably not efficient
+                JRadioButton radioButton = (JRadioButton)e.getSource();
+                selectedOption = radioButton.getText();
+
                 frame.pack();
             });
 
             b2.addActionListener(e -> {
                 newProjectPanel.setVisible(true);
                 openProjectPanel.setVisible(false);
+                //probably not efficient
+                JRadioButton radioButton = (JRadioButton)e.getSource();
+                selectedOption = radioButton.getText();
                 frame.pack();
             });
 
@@ -107,6 +112,9 @@ public class Init {
                 newProjectPanel.setVisible(false);
                 openProjectPanel.setVisible(true);
                 frame.pack();
+                //probably not efficient
+                JRadioButton radioButton = (JRadioButton)e.getSource();
+                selectedOption = radioButton.getText();
             });
             
             newProjectBrowse.addActionListener(e -> {
@@ -158,8 +166,7 @@ public class Init {
                 
                 
                 frame.dispose();
-                System.exit(0);
-                                
+                App.App.start(selectedOption, newProjectBrowse, openProjectBrowse);                                
             });
 
         });
