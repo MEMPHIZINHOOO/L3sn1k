@@ -1,0 +1,56 @@
+   0.012331317s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy) target="proxy"}: cargo::core::compiler::fingerprint: fingerprint error for proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy)/Check { test: false }/TargetInner { name: "proxy", doc: true, ..: with_path("/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy/src/main.rs", Edition2024) }
+   0.012343470s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy) target="proxy"}: cargo::core::compiler::fingerprint:     err: failed to read `/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy/target/debug/.fingerprint/proxy-c62f2fb00acefdf9/bin-proxy`
+
+Caused by:
+    No such file or directory (os error 2)
+
+Stack backtrace:
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: __libc_start_call_main
+  17: __libc_start_main_alias_1
+  18: <unknown>
+   0.013383756s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy) target="proxy"}: cargo::core::compiler::fingerprint: fingerprint error for proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy)/Check { test: true }/TargetInner { name: "proxy", doc: true, ..: with_path("/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy/src/main.rs", Edition2024) }
+   0.013390058s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy) target="proxy"}: cargo::core::compiler::fingerprint:     err: failed to read `/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy/target/debug/.fingerprint/proxy-fec355f37c2b1e20/test-bin-proxy`
+
+Caused by:
+    No such file or directory (os error 2)
+
+Stack backtrace:
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: __libc_start_call_main
+  17: __libc_start_main_alias_1
+  18: <unknown>
+    Checking proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy)
+error: could not compile `proxy` (bin "proxy") due to 5 previous errors; 2 warnings emitted
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `proxy` (bin "proxy" test) due to 5 previous errors; 2 warnings emitted

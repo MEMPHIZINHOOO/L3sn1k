@@ -15,10 +15,8 @@ import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
-import App;
 
-
-public class Init {
+public class open {
 
 
     public static void main(String[] args) {
@@ -87,7 +85,7 @@ public class Init {
 
             newProjectPanel.setVisible(false);
             openProjectPanel.setVisible(false);
-
+            
             // action listeners
             b1.addActionListener(e -> {
                 newProjectPanel.setVisible(false);
@@ -166,7 +164,7 @@ public class Init {
                 
                 
                 frame.dispose();
-                App.App.start(selectedOption, newProjectBrowse, openProjectBrowse);                                
+                l3snik.start(selectedOption, newProjectBrowse, openProjectBrowse);                                
             });
 
         });
