@@ -5,3 +5,6 @@ compile:
 	jar cvf target/L3snik.jar -C bin .
 	java -cp target/L3snik.jar open.java
 
+clean:
+	cd src/proxy
+	rm -r ./target

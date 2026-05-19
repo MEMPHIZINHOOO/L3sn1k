@@ -1,56 +1,18 @@
-   0.012331317s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy) target="proxy"}: cargo::core::compiler::fingerprint: fingerprint error for proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy)/Check { test: false }/TargetInner { name: "proxy", doc: true, ..: with_path("/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy/src/main.rs", Edition2024) }
-   0.012343470s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy) target="proxy"}: cargo::core::compiler::fingerprint:     err: failed to read `/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy/target/debug/.fingerprint/proxy-c62f2fb00acefdf9/bin-proxy`
-
-Caused by:
-    No such file or directory (os error 2)
-
-Stack backtrace:
-   0: <unknown>
-   1: <unknown>
-   2: <unknown>
-   3: <unknown>
-   4: <unknown>
-   5: <unknown>
-   6: <unknown>
-   7: <unknown>
-   8: <unknown>
-   9: <unknown>
-  10: <unknown>
-  11: <unknown>
-  12: <unknown>
-  13: <unknown>
-  14: <unknown>
-  15: <unknown>
-  16: __libc_start_call_main
-  17: __libc_start_main_alias_1
-  18: <unknown>
-   0.013383756s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy) target="proxy"}: cargo::core::compiler::fingerprint: fingerprint error for proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy)/Check { test: true }/TargetInner { name: "proxy", doc: true, ..: with_path("/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy/src/main.rs", Edition2024) }
-   0.013390058s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy) target="proxy"}: cargo::core::compiler::fingerprint:     err: failed to read `/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy/target/debug/.fingerprint/proxy-fec355f37c2b1e20/test-bin-proxy`
-
-Caused by:
-    No such file or directory (os error 2)
-
-Stack backtrace:
-   0: <unknown>
-   1: <unknown>
-   2: <unknown>
-   3: <unknown>
-   4: <unknown>
-   5: <unknown>
-   6: <unknown>
-   7: <unknown>
-   8: <unknown>
-   9: <unknown>
-  10: <unknown>
-  11: <unknown>
-  12: <unknown>
-  13: <unknown>
-  14: <unknown>
-  15: <unknown>
-  16: __libc_start_call_main
-  17: __libc_start_main_alias_1
-  18: <unknown>
-    Checking proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy/proxy)
-error: could not compile `proxy` (bin "proxy") due to 5 previous errors; 2 warnings emitted
+   0.035621565s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy) target="aux"}: cargo::core::compiler::fingerprint: stale: changed "/home/cosm/Work/Projects/L3sn1k/src/proxy/src/lib.rs"
+   0.035641814s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy) target="aux"}: cargo::core::compiler::fingerprint:           (vs) "/home/cosm/Work/Projects/L3sn1k/src/proxy/target/debug/.fingerprint/proxy-d0c5dd4803937331/dep-lib-aux"
+   0.035647575s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy) target="aux"}: cargo::core::compiler::fingerprint:                FileTime { seconds: 1779219640, nanos: 719432474 } < FileTime { seconds: 1779220626, nanos: 187974111 }
+   0.035719110s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy) target="aux"}: cargo::core::compiler::fingerprint: fingerprint dirty for proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy)/Check { test: false }/TargetInner { ..: lib_target("aux", ["lib"], "/home/cosm/Work/Projects/L3sn1k/src/proxy/src/lib.rs", Edition2024) }
+   0.035740580s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy) target="aux"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleItem(ChangedFile { reference: "/home/cosm/Work/Projects/L3sn1k/src/proxy/target/debug/.fingerprint/proxy-d0c5dd4803937331/dep-lib-aux", reference_mtime: FileTime { seconds: 1779219640, nanos: 719432474 }, stale: "/home/cosm/Work/Projects/L3sn1k/src/proxy/src/lib.rs", stale_mtime: FileTime { seconds: 1779220626, nanos: 187974111 } }))
+   0.038709615s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy) target="aux"}: cargo::core::compiler::fingerprint: stale: changed "/home/cosm/Work/Projects/L3sn1k/src/proxy/src/lib.rs"
+   0.038717851s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy) target="aux"}: cargo::core::compiler::fingerprint:           (vs) "/home/cosm/Work/Projects/L3sn1k/src/proxy/target/debug/.fingerprint/proxy-d0dc5dcdfaa213a5/dep-test-lib-aux"
+   0.038722640s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy) target="aux"}: cargo::core::compiler::fingerprint:                FileTime { seconds: 1779219640, nanos: 719432474 } < FileTime { seconds: 1779220626, nanos: 187974111 }
+   0.038758708s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy) target="aux"}: cargo::core::compiler::fingerprint: fingerprint dirty for proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy)/Check { test: true }/TargetInner { ..: lib_target("aux", ["lib"], "/home/cosm/Work/Projects/L3sn1k/src/proxy/src/lib.rs", Edition2024) }
+   0.038767214s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy) target="aux"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleItem(ChangedFile { reference: "/home/cosm/Work/Projects/L3sn1k/src/proxy/target/debug/.fingerprint/proxy-d0dc5dcdfaa213a5/dep-test-lib-aux", reference_mtime: FileTime { seconds: 1779219640, nanos: 719432474 }, stale: "/home/cosm/Work/Projects/L3sn1k/src/proxy/src/lib.rs", stale_mtime: FileTime { seconds: 1779220626, nanos: 187974111 } }))
+   0.039080896s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy) target="proxy"}: cargo::core::compiler::fingerprint: fingerprint dirty for proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy)/Check { test: false }/TargetInner { name: "proxy", doc: true, ..: with_path("/home/cosm/Work/Projects/L3sn1k/src/proxy/src/main.rs", Edition2024) }
+   0.039091436s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy) target="proxy"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { unit: UnitIndex(24) })
+   0.039370483s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy) target="proxy"}: cargo::core::compiler::fingerprint: fingerprint dirty for proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy)/Check { test: true }/TargetInner { name: "proxy", doc: true, ..: with_path("/home/cosm/Work/Projects/L3sn1k/src/proxy/src/main.rs", Edition2024) }
+   0.039379209s  INFO prepare_target{force=false package_id=proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy) target="proxy"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { unit: UnitIndex(24) })
+    Checking proxy v0.1.0 (/home/cosm/Work/Projects/L3sn1k/src/proxy)
+error: could not compile `proxy` (lib) due to 1 previous error; 1 warning emitted
 warning: build failed, waiting for other jobs to finish...
-error: could not compile `proxy` (bin "proxy" test) due to 5 previous errors; 2 warnings emitted
+error: could not compile `proxy` (lib test) due to 1 previous error; 1 warning emitted

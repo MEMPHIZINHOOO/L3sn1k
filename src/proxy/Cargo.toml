@@ -3,5 +3,9 @@ name = "proxy"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "aux"
+path = "src/lib.rs"
 [dependencies]
-clap = "4.6.1"
+clap = { version = "4.6.1", features = ["derive"] }
+ctrlc = "3.5.2"
