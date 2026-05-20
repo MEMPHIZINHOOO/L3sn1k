@@ -6,5 +6,4 @@ compile:
 	java -cp target/L3snik.jar open.java
 
 clean:
-	cd src/proxy
-	rm -r ./target
+	rm -rf src/proxy/target
