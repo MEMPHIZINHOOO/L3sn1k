@@ -1,27 +1,24 @@
 // use iced::widget::column;
 use iced::{
- Alignment,
- Event, 
- Task,
- event::{self},
- keyboard,
- widget::{column, radio,
-     row,
+ Alignment, Event, Length, Task, event::{self}, keyboard,  widget::{button, column, radio, row
 }};
 
-
+mod project;
 /// struct L3snikGui is responsible for the abstraction of the overall app and it's components
 /// it is ran calling the start() command, and has no other public available methods, as those
 /// are made for interaction with the iced crated directly
 #[derive(Default)]
 pub struct L3snikGui {
     project_selection :Option<u32>,
+    loaded_file: Option<rfd::FileHandle>,
+    loaded_file_string: String,
 }
 
 /// message enum for interactions with the widgets
 #[derive(Debug, Clone)]
 pub enum Message {
     ProjectSelection(u32),
+    FileChosen,
 }
 
 impl L3snikGui {
@@ -41,24 +38,28 @@ impl L3snikGui {
     /// in broader terms it is the constant thread looking at changes done to the UI
     fn update(&mut self, msg: Message) -> Task<Message> {
         match msg {
-            Message::ProjectSelection(value) => {self.project_selection = Some(value); Task::none() }
+            Message::ProjectSelection(value) => {self.project_selection = Some(value); Task::none() },
+            Message::FileChosen => {
+                if self.loaded_file.is_some() { choose_file(); self.loaded_file_string = self.loaded_file.clone().unwrap().file_name();}
+                Task::none()
+            }
         }
     }
 
     /// pretty self explanatory, I think
     fn view(&self) -> iced::Element<'_,Message> {
-        column![
+        row![
             column![
                 radio("New Project", 1, self.project_selection, |value| Message::ProjectSelection(value)),
                 radio("Load Project from file", 2, self.project_selection, |value| Message::ProjectSelection(value)),
                 radio("Temporary Project", 3, self.project_selection, |value| Message::ProjectSelection(value)),
-                ].spacing(100).align_x(Alignment::Center),
+                ].spacing(50).width(Length::FillPortion(1)).align_x(Alignment::Center),
+
             if let  Some(value) = self.project_selection {
                 if value == 2 {
                     row![
-                        iced::widget::text("alright gib file"),
-                    ].align_y(Alignment::End)
-                    
+                        column![button(self.loaded_file_string.as_str()).on_press(Message::FileChosen)]                            
+                    ].width(Length::FillPortion(5)).align_y(Alignment::End)                    
                 }
                 else {
                     row![]
