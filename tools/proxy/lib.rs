@@ -6,7 +6,7 @@ use clap::Parser;
 
 /// class responsible for dealing with threadPooling and workers queues
 /// it is abstracted from the developer, should be easy to use, might modify it a bit later on
-/// it's pretty weird rust stuff, did you know queues do not exist normally?
+/// it's pretty weird rust stuff, did you know mutex safe queues do not exist normally?
 pub struct ThreadPool {
     workers: Vec<Worker>,
     sender: Option<mpsc::Sender<Job>>, 
