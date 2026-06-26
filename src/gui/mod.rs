@@ -1,26 +1,46 @@
 // use iced::widget::column;
 use iced::{
- Alignment, Event, Length, Task, event::{self}, keyboard,  widget::{button, column, radio, row
-}};
+ Alignment, Event, Length, Task, event::{self}, keyboard,  widget::{button, column, radio, row,}};
+use std::path::PathBuf;
+use crate::gui::project::choose_file;
+
+
 
 mod project;
 /// struct L3snikGui is responsible for the abstraction of the overall app and it's components
 /// it is ran calling the start() command, and has no other public available methods, as those
 /// are made for interaction with the iced crated directly
 #[derive(Default)]
+
+
 pub struct L3snikGui {
+    project_state: Page,
+    // project seleection structs
     project_selection :Option<u32>,
-    loaded_file: Option<rfd::FileHandle>,
+    //loaded file as a path buf so we do not lose the direct path reference
+    loaded_file: Option<PathBuf>,
+    //loaded file as a string
     loaded_file_string: String,
 }
 
 /// message enum for interactions with the widgets
 #[derive(Debug, Clone)]
 pub enum Message {
+    // project selection respective to a button and the respective choice
     ProjectSelection(u32),
+    //the file chosen
     FileChosen,
+    // continuining onto the actual project
+    Continue,
 }
 
+// two pages, select the project options and the actual project
+#[derive(Default, PartialEq)]
+pub enum Page {
+    #[default]
+    ProjectSelection,
+    Project,
+}
 impl L3snikGui {
     #[allow(clippy::unused_self, reason = "required by iced interface trait")]
     
@@ -38,9 +58,26 @@ impl L3snikGui {
     /// in broader terms it is the constant thread looking at changes done to the UI
     fn update(&mut self, msg: Message) -> Task<Message> {
         match msg {
+            // matches the selected value of the projectSelection
             Message::ProjectSelection(value) => {self.project_selection = Some(value); Task::none() },
+            // gets the chosen file path into the screen
             Message::FileChosen => {
-                if self.loaded_file.is_some() { choose_file(); self.loaded_file_string = self.loaded_file.clone().unwrap().file_name();}
+
+                self.loaded_file = choose_file();
+        
+                if self.loaded_file.is_some()
+                {
+                    //we need to rewrite these unwraps so they are handled, eventually.
+                    self.loaded_file_string = self.loaded_file.clone().unwrap().to_str().unwrap().to_string();
+                }
+                            
+                else {
+                    self.loaded_file_string = "Choose a File".to_string();
+                }
+                           Task::none()
+            }
+            Message::Continue => {
+                self.project_state = Page::Project;
                 Task::none()
             }
         }
@@ -48,33 +85,41 @@ impl L3snikGui {
 
     /// pretty self explanatory, I think
     fn view(&self) -> iced::Element<'_,Message> {
-        row![
-            column![
-                radio("New Project", 1, self.project_selection, |value| Message::ProjectSelection(value)),
-                radio("Load Project from file", 2, self.project_selection, |value| Message::ProjectSelection(value)),
-                radio("Temporary Project", 3, self.project_selection, |value| Message::ProjectSelection(value)),
-                ].spacing(50).width(Length::FillPortion(1)).align_x(Alignment::Center),
-
-            if let  Some(value) = self.project_selection {
-                if value == 2 {
-                    row![
-                        column![button(self.loaded_file_string.as_str()).on_press(Message::FileChosen)]                            
-                    ].width(Length::FillPortion(5)).align_y(Alignment::End)                    
+        if self.project_state == Page::ProjectSelection {
+            row![
+                column![
+                    radio("New Project", 1, self.project_selection, |value| Message::ProjectSelection(value)),
+                    radio("Load Project from file", 2, self.project_selection, |value| Message::ProjectSelection(value)),
+                    radio("Temporary Project", 3, self.project_selection, |value| Message::ProjectSelection(value)),
+                    ].spacing(50).width(Length::FillPortion(1)).align_x(Alignment::Center),
+                    column![
+                        button("Continue").on_press(Message::Continue) 
+                    ],
+                if let  Some(value) = self.project_selection {
+                    if value == 2 {
+                        row![
+                            column![button(self.loaded_file_string.as_str()).on_press(Message::FileChosen)]                            
+                        ].width(Length::FillPortion(5)).align_y(Alignment::End)                    
+                    }
+            
+                    else {
+                        row![]
+                    }
                 }
                 else {
                     row![]
                 }
+                ].into()
             }
-            else {
-                row![]
-            }
-            ].into()
+        else {
+            row![ ].into()
+        }    
     }
     /// event listener, currently only listens to the Ctrl+Q command, TODO: fix it, this shit doesn't work
     fn subscription(&self) -> iced::Subscription<Message> {
         event::listen_with( |event, _, _| match event {
             Event::Keyboard(keyboard::Event::KeyPressed { key, modifiers, ..})
-            if modifiers.control() && modifiers.shift() => {
+            if modifiers.control() => {
                 match key{
                     keyboard::Key::Character(c) => match c.as_str() {
                         "q" => std::process::exit(0),
@@ -101,7 +146,7 @@ impl L3snikGui {
             resizable: true,
             closeable: true,
             minimizable: true,
-            decorations: false,
+            decorations: true,
             transparent: false,
             blur: false,
             level: iced::window::Level::Normal,
