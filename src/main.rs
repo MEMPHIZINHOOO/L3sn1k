@@ -1,5 +1,5 @@
 mod gui;
-
+mod tests;
 fn main() -> iced::Result {
 
     unsafe {

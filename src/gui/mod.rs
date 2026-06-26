@@ -1,6 +1,6 @@
 // use iced::widget::column;
-use iced::{
- Alignment, Event, Length, Task, event::{self}, keyboard,  widget::{button, column, radio, row,}};
+use iced::{ window, Size,
+ Alignment, Event, Length, Task, event::{self}, keyboard,  widget::{button, column, radio, row, rule}};
 use std::path::PathBuf;
 use crate::gui::project::choose_file;
 
@@ -14,7 +14,8 @@ mod project;
 
 
 pub struct L3snikGui {
-    project_state: Page,
+    init_state: InitPage,
+    project_state: GuiToolPage,
     // project seleection structs
     project_selection :Option<u32>,
     //loaded file as a path buf so we do not lose the direct path reference
@@ -32,14 +33,32 @@ pub enum Message {
     FileChosen,
     // continuining onto the actual project
     Continue,
+
+    /// DECLARATION OF MESSAGE TYPES IN THE Project type
+
+    // proxy page
+    Proxy,
+    // repeater page
+    Repeater,
+    // target page
+    Target,
 }
 
 // two pages, select the project options and the actual project
 #[derive(Default, PartialEq)]
-pub enum Page {
+pub enum InitPage {
     #[default]
     ProjectSelection,
     Project,
+}
+
+#[derive(Default)]
+pub enum GuiToolPage {
+    Repeater,
+    #[default]
+    Target,
+    Proxy,
+    
 }
 impl L3snikGui {
     #[allow(clippy::unused_self, reason = "required by iced interface trait")]
@@ -51,6 +70,11 @@ impl L3snikGui {
             Self::default(),
             Task::none(),
         )
+    }
+    fn resize_window(width: f32, height: f32) -> impl Fn(window::Id) -> Task<Message> {
+        move |window_id: window::Id| {
+            window::resize::<Message>(window_id, Size::new(width, height))
+        }
     }
     /// updates based on received interaction with the widget
     /// takes itself as a mutable reference and a message and returns
@@ -77,15 +101,34 @@ impl L3snikGui {
                            Task::none()
             }
             Message::Continue => {
-                self.project_state = Page::Project;
-                Task::none()
+                self.init_state = InitPage::Project;
+                return window::latest().and_then(Self::resize_window(1600.0, 1080.0))
+                
             }
+            
+            Message::Proxy => {
+                self.project_state = GuiToolPage::Proxy;
+                Task::none()    
+            }
+            
+            Message::Repeater => {
+                self.project_state = GuiToolPage::Repeater;
+                Task::none()    
+            }
+            
+            Message::Target => {
+                self.project_state = GuiToolPage::Target;
+                Task::none()    
+            }
+            
         }
     }
 
-    /// pretty self explanatory, I think
+    /// pretty self explanatory, I think, it is divided into the project selection type and the project itself
+    /// this needs to be refactored into smaller portions of code
     fn view(&self) -> iced::Element<'_,Message> {
-        if self.project_state == Page::ProjectSelection {
+        // project selection type case
+        if self.init_state == InitPage::ProjectSelection {
             row![
                 column![
                     radio("New Project", 1, self.project_selection, |value| Message::ProjectSelection(value)),
@@ -111,8 +154,33 @@ impl L3snikGui {
                 }
                 ].into()
             }
+
         else {
-            row![ ].into()
+            column![
+                // the navigation menu
+                row![
+                    button("Proxy").on_press(Message::Proxy),
+                    button("Repeater").on_press(Message::Repeater),
+                    button("Target").on_press(Message::Target),
+                ].spacing(100),
+                rule::horizontal(10),
+
+                // match for the guitoolpages
+                match self.project_state {
+
+                    GuiToolPage::Proxy => {
+                        row![]
+                    }
+
+                    GuiToolPage::Repeater => {
+                        row![]
+                    }
+
+                    GuiToolPage::Target => {
+                        row![]
+                    }
+                }
+            ].into()
         }    
     }
     /// event listener, currently only listens to the Ctrl+Q command, TODO: fix it, this shit doesn't work
