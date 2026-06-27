@@ -1,7 +1,7 @@
 // use iced::widget::column;
 use iced::{ window, Size,
- Alignment, Event, Length, Task, event::{self}, keyboard,  widget::{button, column, radio, row, rule}};
-use std::path::PathBuf;
+ Alignment, Event, Length, Task, event::{self}, keyboard,  widget::{button, column, radio, row, rule, text, Scrollable, scrollable::{Direction, Scrollbar}}};
+use std::{path::PathBuf};
 use crate::gui::project::choose_file;
 
 
@@ -169,7 +169,16 @@ impl L3snikGui {
                 match self.project_state {
 
                     GuiToolPage::Proxy => {
-                        row![]
+                        let test_values = column((0..10).map( |_| text("test values").into()));
+                        row![
+                            column![
+                                Scrollable::new(test_values)
+                                .width(Length::Fill)
+                                .height(Length::Fill)
+                                .direction(Direction::Vertical(Scrollbar::new())),
+                            ].width(Length::FillPortion(2)),
+                            column![].width(Length::FillPortion(3)),
+                        ]
                     }
 
                     GuiToolPage::Repeater => {
