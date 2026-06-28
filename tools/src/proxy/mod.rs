@@ -1,8 +1,11 @@
 /// AUXILIARY FUNCTIONS FOR DEVELOPMENT
+//aux imports
+// threading imports
+// CLI imports
+// proxy imports 
 
-use std::{sync::{Arc, Mutex, mpsc}, thread, io::{BufReader}, net::{TcpStream}};
+use std::{sync::{Arc, Mutex, mpsc}, thread, io::{BufReader, prelude::*}, net::{TcpStream, TcpListener}};
 
-use clap::Parser;
 
 /// class responsible for dealing with threadPooling and workers queues
 /// it is abstracted from the developer, should be easy to use, might modify it a bit later on
@@ -99,13 +102,6 @@ impl Drop for ThreadPool {
 }
 
 /// Cli commands abstractions
-#[derive( Clone, Parser)]
-pub struct Cli {
-    pub pattern: String,
-    pub address: String,
-    pub threads: String,
-}
-
 
 /// Connection type, it corresponds to all the information passing through a specific thread [`Worker`]
 /// it is constructed by each and every thread for each connection and can be applied modifications to in the
@@ -120,4 +116,40 @@ pub struct Connection<'a> {
 /// still to be built, will communicate with a thread responsible for communicating with the application
 pub struct ConnectionQueue<'a> {
     pub receiver: Option<mpsc::Sender<Connection<'a>>>, 
+}
+
+
+
+pub fn proxy_run<'a>(arg: usize) {
+    let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
+    let pool = ThreadPool::new(arg);
+    for stream in listener.incoming() {
+        let stream = stream.unwrap();
+
+        pool.execute( || {
+            handle_connection(stream);
+        });
+    }
+}
+
+fn handle_connection<'a>(stream: TcpStream) {
+    //  still to be done establishTLS()
+    let peer_address = stream.peer_addr().unwrap();
+    let buf_reader = BufReader::new(&stream);
+    let mut request = buf_reader.lines();
+    
+    let host_line = request.nth(1);
+    let domain = host_line.unwrap().unwrap().get(6..).unwrap().to_string();
+
+
+    
+    let _thread_connection = Connection { peer_address: peer_address, request, domain: &domain};
+
+
+    
+}
+
+// should do something
+fn interact_with_app() {
+    return    
 }

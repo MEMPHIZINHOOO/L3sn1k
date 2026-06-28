@@ -1,3 +1,3 @@
 
 
-cargo run
+cargo run -- 2
