@@ -4,6 +4,7 @@ use iced::{ window, Size,
 use std::{path::PathBuf};
 use crate::gui::project::choose_file;
 
+use std::error::Error;
 
 
 mod project;
@@ -211,7 +212,7 @@ impl L3snikGui {
 }
 
 impl L3snikGui {
-    pub fn start() -> iced::Result {
+    pub fn start() -> Result<(), Box<dyn Error + 'static>> {
         iced::application(L3snikGui::new, L3snikGui::update, L3snikGui::view).window(iced::window::Settings {
             size: iced::Size { width: 920.0, height: 720.0,},
             maximized: false,
@@ -233,7 +234,8 @@ impl L3snikGui {
             })
         .title("L3snik")
         .subscription(L3snikGui::subscription)
-        .run()
+        .run()?;
+        Ok(())
     }    
 }
 

@@ -1,11 +1,16 @@
-use std::{net::SocketAddr, path::PathBuf};
-use std::path;
-use proxelar::{Proxy, ProxyConfig, UpstreamTlsConfig, ProxyEvent};
+use std::io;
+use std::path::Path;
+use std::{ net::SocketAddr, path::PathBuf, fs::{self, DirEntry}};
+use proxelar::{Error, Proxy, ProxyConfig, ProxyEvent, UpstreamTlsConfig};
 use tokio::sync::mpsc::Sender;
+use certgenutil::generate_self_signed_cert;
 
-pub async fn instantiate_proxy(arg: SocketAddr, tx: Sender<ProxyEvent>) -> Result<(), T: std::error::Error> {
+//resolve both functions to return both errors, #1
+pub async fn instantiate_proxy(arg: SocketAddr, tx: Sender<ProxyEvent>) -> Result<String, Error> 
+{
     let mut resolved_path = PathBuf::new();
-    PathBuf::push(&mut resolved_path, std::env::var("CA_DIR")?);
+    // we are not resolving for env error, we probably need a separate function or a more hardened resolve, the path should exist by the time we try to actually open it
+    PathBuf::push(&mut resolved_path, std::env::var("CA_DIR").unwrap_or("../../../.keys".to_string()));
     
     let proxy_config = ProxyConfig {
         addr: arg,
@@ -21,9 +26,17 @@ pub async fn instantiate_proxy(arg: SocketAddr, tx: Sender<ProxyEvent>) -> Resul
     };
     let proxy = Proxy::new(proxy_config);
 
-    proxy.start(True).await?;
-    Ok("turning proxy off");        
+    proxy.start( async { }).await?;
+    Ok("turning proxy off".to_string())       
 }
 
-
-
+pub fn check_init_CA_dir() -> Result<(), Error> {
+    // we read the dir
+    if let Ok(directory) = fs::read_dir(std::env::var("CA_DIR").unwrap_or("../../../.keys".to_string())) {
+        return Ok(());  
+    }
+    else {
+        return Ok(());
+    }
+             
+}
