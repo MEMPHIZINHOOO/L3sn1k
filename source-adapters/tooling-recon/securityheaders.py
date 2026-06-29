@@ -1,4 +1,6 @@
 import requests
+from requests.exceptions import Timeout, HTTPError, SSLError, RequestException, TooManyRedirects, ConnectionError
+
 
 headerslist = [
     # Core security headers
@@ -73,20 +75,34 @@ headerslistlower = [item.lower() for item in headerslist]
 
 def getheaders(domain):
 	presentheaders={}
-	url =f"https://{domain}/"
-	result = requests.get(url)
-	headers = result.headers
-	lowerheaders ={key.lower(): value for key, value in headers.items()}
+	try:
+		url =f"https://{domain}/"
+		result = requests.get(url, timeout=3)
+		presentheaders["status-code"] = result.status_code
+		headers = result.headers
+		lowerheaders ={key.lower(): value for key, value in headers.items()}
 
-	for i in headerslistlower:
-		if i in lowerheaders:
-			presentheaders[i]=lowerheaders[i]
-			#print(presentheaders)
+		for i in headerslistlower:
+			if i in lowerheaders:
+				presentheaders[i]=lowerheaders[i]
+				#print(presentheaders)
 
-	if not presentheaders:
-		print("No security headers found!")	
+		if len(presentheaders)==1:
+			print("No security headers found!")
+
+	except Timeout:
+		presentheaders["error"]="timeout"
+	except SSLError: 
+		presentheaders["error"]="ssl error"
+	except TooManyRedirects:
+		presentheaders["error"]="too many redirects"
+	except ConnectionError:
+		presentheaders["error"]="connection error"
+	except HTTPError:
+		presentheaders["error"]="http error"
+	except RequestException:
+		presentheaders["error"]="request exception error"
+
 	return presentheaders
 
-
-	
 
