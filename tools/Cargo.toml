@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-proxelar = "0.4.7"
+certgenutil = "0.1.1"
+proxelar = {version="0.4.7", package="proxyapi"}
+tokio = "1.52.3"
