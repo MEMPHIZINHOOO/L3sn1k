@@ -91,7 +91,7 @@ def wellknownfinder(domain):
             visited_endpoint = url + i
             response = requests.get(visited_endpoint, timeout=3)
             resultlist[i]={
-                #normalized compile
+                
                 "status-code": response.status_code,
                 "content-type": response.headers.get("Content-Type"),
                 "content-length": response.headers.get("Content-Length"),
