@@ -1872,8 +1872,10 @@ name = "l3snik"
 version = "0.1.0"
 dependencies = [
  "ctrlc",
+ "http",
  "iced",
  "proxyapi",
+ "proxyapi_models",
  "rfd",
  "tokio",
  "tools",
