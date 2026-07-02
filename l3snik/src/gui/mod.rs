@@ -94,6 +94,7 @@ fn match_request_values(method: &Method) -> String {
 fn view_proxy_event(event: &ProxyEvent) -> iced::Element<'_, Message> {
     match *event {
         //@todo: fix incomplete request complete parameters being shown
+        // request complete proxyevent type
          ProxyEvent::RequestComplete { id, request, response } => {
             let request_value = match_request_values(request.method());
             let uri_value = request.uri();
