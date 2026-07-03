@@ -1,14 +1,14 @@
 use core::fmt;
 use std::{ error::Error, 
-    fs::{self, DirEntry, File},
-    io::{BufWriter, Write},
+    fs::{self, DirEntry,},
     net::SocketAddr,
-    path::{Path, PathBuf}
+    path::{Path, PathBuf},
+    sync::{Arc, Mutex}
 };
 
 use proxelar::{Proxy, ProxyConfig, ProxyEvent, UpstreamTlsConfig};
 use tokio::sync::mpsc::Sender;
-use certgenutil::{generate_self_signed_cert, load_cert_from_pem_file};
+use certgenutil::{ load_cert_from_pem_file};
 
 
 #[derive(Debug)]
@@ -30,7 +30,7 @@ impl fmt::Display for ProxyErrors {
 impl Error for ProxyErrors {}
 
 //resolve both functions to return both errors, #1
-pub async fn instantiate_proxy(arg: SocketAddr, tx: Sender<ProxyEvent>) -> Result<String, Box<dyn Error + Send>> 
+pub async fn instantiate_proxy(arg: SocketAddr, tx_proxy: Sender<ProxyEvent>, tx_log: Arc<Mutex<Sender<Box<dyn Error + Send>>>>) -> Result<String, ()> 
 {
     let mut resolved_path = PathBuf::new();
     // we are not resolving for env error, we probably need a separate function or a more hardened resolve, the path should exist by the time we try to actually open it
@@ -39,22 +39,22 @@ pub async fn instantiate_proxy(arg: SocketAddr, tx: Sender<ProxyEvent>) -> Resul
     let proxy_config = ProxyConfig {
         addr: arg,
         mode: proxelar::ProxyMode::Forward,
-        event_tx: tx,
+        event_tx: tx_proxy,
         ca_dir: resolved_path,
         upstream_tls: UpstreamTlsConfig::Default,
         //@TODO: get the interception communicating
         intercept: None,
         body_capture_limit: None,
-        script_path: None,
-        allow_c_modules: false,
         //@TODO: might also come in handy
         replay_rx: None,
     };
     let proxy = Proxy::new(proxy_config);
 
     if let Err(_) =proxy.start( async { }).await {
+        let held_tx_lock = tx_log.lock().unwrap().take().expect("logger has been called more than once");
         //@todo: fix improper error handling, proxy error should be able to grab the Err from inside proxelar and cast it upwards in our own notation
-        return Err(Box::new(ProxyErrors { error: "proxy failed to start or failed during execution".to_string()}));
+        tx_log.try_send(Box::new(ProxyErrors { error: "proxy failed to start or failed during execution".to_string()})).expect("the logging is not working properly");
+        ()
     }
     
     Ok("turning proxy off".to_string())       
@@ -69,9 +69,7 @@ pub fn check_init_ca_dir() -> Result<(), Box<dyn Error>> {
     // obviously we do not know whether the CA_DIR exists in the environment, but if not, we default to unwrapping the default value
     // this will deal a panic in case there's no resolution, because it is not supposed to either way
 
-    println!("something wrong in path existing");
     if  Path::new(std::env::var("CA_DIR")?.as_str()).exists() {
-        println!("something wrong in path existing");
         if let Ok(directory) = fs::read_dir(std::env::var("CA_DIR").unwrap_or(CA_DEFAULT_DIR.to_string())){
             for entry in directory {
 

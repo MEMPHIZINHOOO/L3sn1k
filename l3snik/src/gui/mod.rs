@@ -1,27 +1,29 @@
 
 // iced imports
-use iced::{ Alignment, Event, Length, Size, Task, event::{self}, keyboard, widget::{Scrollable, button, column, radio, row, rule, scrollable::{Direction, Scrollbar}, sensor::Key, text}, window};
+use iced::{ Alignment, Event, Length, Size, Task, event::{self}, keyboard, widget::{Scrollable, button, column, radio, row, rule, scrollable::{Direction, Scrollbar},
+    // sensor::Key, text},
+    }, window};
 
 //std imports
-use std::{error::Error, io::IntoInnerError, path::PathBuf, sync::{Arc, Mutex}};
+use std::{error::Error, path::PathBuf, sync::{Arc, Mutex}};
 
 use crate::gui::project::choose_file;
 
 //tokio imports
-use tokio::sync::mpsc::Receiver;
-
+use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::mpsc::error::TryRecvError;
 //proxelar imports
 use proxelar::ProxyEvent;
-use proxelar_models::ProxiedRequest;
 
 // http imports
-use http::Method,
+use http::Method;
 
 mod project;
 /// struct L3snikGui is responsible for the abstraction of the overall app and it's components
 /// it is ran calling the start() command, and has no other public available methods, as those
 /// are made for interaction with the iced crated directly
 
+type ErrorSend = Box<dyn Error + Send + 'static>;
 
 pub struct L3snikGui {
     init_state: InitPage,
@@ -35,6 +37,7 @@ pub struct L3snikGui {
 
     pub tx_proxy_event_receiver: Receiver<ProxyEvent>,
     pub proxy_events: Vec<ProxyEvent>,
+    pub sender_logs: Arc<Mutex<Sender<ErrorSend>>>,
 }
 
 /// message enum for interactions with the widgets
@@ -74,7 +77,7 @@ pub enum GuiToolPage {
     
 }
 fn match_request_values(method: &Method) -> String {
-     match *request.method() {
+     match *method {
          Method::OPTIONS => "OPTIONS".to_string(),
          Method::GET => "GET".to_string(),
          Method::PUT => "PUT".to_string(),
@@ -92,40 +95,45 @@ fn match_request_values(method: &Method) -> String {
 ///view_proxy_event formats any given proxyEvent into a Element accepted by iced
 /// in this function we extract the values we want to show to the user in the proxy history
 fn view_proxy_event(event: &ProxyEvent) -> iced::Element<'_, Message> {
-    match *event {
+    match event {
         //@todo: fix incomplete request complete parameters being shown
         // request complete proxyevent type
-         ProxyEvent::RequestComplete { id, request, response } => {
+         ProxyEvent::RequestComplete { .., request, .. } => {
+
             let request_value = match_request_values(request.method());
             let uri_value = request.uri();
-
+            let request_time = request.time();
+            
             let uri_path_query = match uri_value.path_and_query() {
                 Some(path_value) => path_value.as_str().to_string(),
-                None() => "ERROR: no URL found, check for proxy logging".to_string()
+                None => "ERROR: no URL found, check for proxy logging".to_string()
             };
-             iced::widget::text(format!("HTTP \t {request_value:?} \t {uri_path_query:?}  {request.time():?}")).into()
+             iced::widget::text(format!("HTTP \t {request_value:?} \t {uri_path_query:?}  {request_time:?}")).into()
          },
-         ProxyEvent::RequestIntercepted { id, request } => {
+         
+         ProxyEvent::RequestIntercepted { .., request } => {
              let request_value = match_request_values(request.method());
              let uri_value = request.uri();
+             let request_time = request.time();
 
              let uri_path_query = match uri_value.path_and_query() {
                 Some(path_value) => path_value.as_str().to_string(),
-                None() => "ERROR: no URL found, check for proxy logging".to_string()
+                None => "ERROR: no URL found, check for proxy logging".to_string()
              };
-             iced::widget::text(format!("HTTP \t {request_value:?} \t {uri_path_query:?}  {request.time():?}")).into()
+             iced::widget::text(format!("HTTP \t {request_value:?} \t {uri_path_query:?}  {request_time:?}")).into()
          },
-         ProxyEvent::Error { message } => iced::widget::text(format!({message})).into(),
+         ProxyEvent::Error { message } => iced::widget::text(format!("{message}")).into(),
 
-         ProxyEvent::WebSocketConnected { id, request, response } => {
-             let request_value = match_request_values(method);
+         ProxyEvent::WebSocketConnected { .., request, .. } => {
+             let request_value = match_request_values(request.method());
              let uri_value = request.uri();
+             let request_time = request.time();
 
              let uri_path_query = match uri_value.path_and_query() {
                 Some(path_value) => path_value.as_str().to_string(),
-                None() => "ERROR: no URL found, check for proxy logging".to_string()
+                None => "ERROR: no URL found, check for proxy logging".to_string()
              };
-             iced::widget::text(format!("WS \t {request_value:?} \t {uri_path_query:?}  {request.time():?}")).into()
+             iced::widget::text(format!("WS \t {request_value:?} \t {uri_path_query:?}  {request_time:?}")).into()
          },
         _ => iced::widget::text(format!("non implemented websocket frames and closing")).into(),
     }
@@ -135,7 +143,7 @@ impl L3snikGui {
     
     /// generates a new self object
     /// loads the default utilizing default Rust's trait derivation
-    fn new(tx_receiver: Receiver<ProxyEvent>, proxy_values: Vec<ProxyEvent>) -> (Self, Task<Message>) {
+    fn new(tx_receiver: Receiver<ProxyEvent>, proxy_values: Vec<ProxyEvent>, sender_log: Arc<Mutex<Sender<ErrorSend>>>) -> (Self, Task<Message>) {
         
             (
                 L3snikGui {
@@ -146,6 +154,7 @@ impl L3snikGui {
                     loaded_file_string: "".to_string(),
                     tx_proxy_event_receiver: tx_receiver,
                     proxy_events: proxy_values,
+                    sender_logs: sender_log,
                 },
                 Task::none(),
 
@@ -249,10 +258,19 @@ impl L3snikGui {
                 match self.project_state {
 
                     GuiToolPage::Proxy => {
-                        while let value = self.tx_proxy_event_receiver.as_recv() {
-                            self.proxy_events.push(value);
+                        while let value = self.tx_proxy_event_receiver.try_recv() {
+                            match value {
+                                Ok(proxy_event) => self.proxy_events.push(proxy_event),
+                                // todo add additional GUI for this
+                                Err(error) => match error {
+                                    TryRecvError::Empty => break,
+                                    TryRecvError::Disconnected => (),  
+                                }
+                                
+
+                            }
                         }
-                        let proxy_formatted = proxy_values.into_iter().map(|value| view_proxy_event(value));
+                        let proxy_formatted = self.proxy_events.into_iter().map(|value| view_proxy_event(&value));
 
                         row![
                             column![
@@ -276,7 +294,6 @@ impl L3snikGui {
             ].into()
           }  
         }    
-    }
     /// event listener, currently only listens to the Ctrl+Q command, TODO: fix it, this shit doesn't work
     fn subscription(&self) -> iced::Subscription<Message> {
         event::listen_with( |event, _, _| match event {
@@ -293,25 +310,21 @@ impl L3snikGui {
         _ => None,    
         })
     }
-
+}
 impl L3snikGui {
-    pub fn start(tx_receiver: Receiver<ProxyEvent>) -> Result<(), Box<dyn Error + 'static>> {
-        let receiver = Arc::new(Mutex::new(Some(tx_receiver)));
+    pub fn start(tx_proxy_receiver: Receiver<ProxyEvent>, tx_log_sender: Arc<Mutex<Sender<ErrorSend>>>) -> Result<(), ()> {
+        let receiver = Arc::new(Mutex::new(Some(tx_proxy_receiver)));
         let mut proxy_values : Vec<ProxyEvent> = Vec::new(); 
+        let sender = Arc::new(Mutex::new(Some(tx_log_sender)));
 
-        iced::application(
+        match iced::application(
                move || {
             let rx = receiver
                 .lock()
                 .unwrap()
                 .take()
                 .expect("L3snikGui boot called more than once");
-            let proxy_values = proxy
-                .lock()
-                .unwrap()
-                .take()
-                .expect("proxy_values were called more than expected");
-            L3snikGui::new(rx,proxy_values)
+            L3snikGui::new(rx,proxy_values,tx_log_sender)
         },
 
          L3snikGui::update,
@@ -337,7 +350,10 @@ impl L3snikGui {
             })
         .title("L3snik")
         .subscription(L3snikGui::subscription)
-        .run()?;
+        .run() {
+            Ok(_) => {},
+            Err(_) => {tx_log_sender.send(Err("something went wrong on the app startup").expect("the logger isn't working, shutting down"));},
+        };
         Ok(())
     }    
 }
