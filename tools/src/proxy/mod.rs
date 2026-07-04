@@ -3,11 +3,12 @@ use std::{ error::Error,
     fs::{self, DirEntry,},
     net::SocketAddr,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex}
 };
 
 use proxelar::{Proxy, ProxyConfig, ProxyEvent, UpstreamTlsConfig};
+
 use tokio::sync::mpsc::Sender;
+
 use certgenutil::{ load_cert_from_pem_file};
 
 
@@ -30,7 +31,7 @@ impl fmt::Display for ProxyErrors {
 impl Error for ProxyErrors {}
 
 //resolve both functions to return both errors, #1
-pub async fn instantiate_proxy(arg: SocketAddr, tx_proxy: Sender<ProxyEvent>, tx_log: Arc<Mutex<Sender<Box<dyn Error + Send>>>>) -> Result<String, ()> 
+pub async fn instantiate_proxy(arg: SocketAddr, tx_proxy: Sender<ProxyEvent>, tx_log: Sender<Box<dyn Error + Send>>) -> Result<String, ()> 
 {
     let mut resolved_path = PathBuf::new();
     // we are not resolving for env error, we probably need a separate function or a more hardened resolve, the path should exist by the time we try to actually open it
@@ -51,9 +52,9 @@ pub async fn instantiate_proxy(arg: SocketAddr, tx_proxy: Sender<ProxyEvent>, tx
     let proxy = Proxy::new(proxy_config);
 
     if let Err(_) =proxy.start( async { }).await {
-        let held_tx_lock = tx_log.lock().unwrap().take().expect("logger has been called more than once");
+        //also handle this better
         //@todo: fix improper error handling, proxy error should be able to grab the Err from inside proxelar and cast it upwards in our own notation
-        tx_log.try_send(Box::new(ProxyErrors { error: "proxy failed to start or failed during execution".to_string()})).expect("the logging is not working properly");
+        tx_log.send(Box::new(ProxyErrors { error: "proxy failed to start or failed during execution".to_string()})).await.expect("the logging is not working properly");
         ()
     }
     

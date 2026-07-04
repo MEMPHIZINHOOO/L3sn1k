@@ -5,13 +5,15 @@ use iced::{ Alignment, Event, Length, Size, Task, event::{self}, keyboard, widge
     }, window};
 
 //std imports
-use std::{error::Error, path::PathBuf, sync::{Arc, Mutex}};
+use std::{error::Error, path::PathBuf};
 
 use crate::gui::project::choose_file;
 
 //tokio imports
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::{mpsc::{Receiver, Sender}};
 use tokio::sync::mpsc::error::TryRecvError;
+use tokio::sync::Mutex;
+use std::sync::Arc;
 //proxelar imports
 use proxelar::ProxyEvent;
 
@@ -37,7 +39,6 @@ pub struct L3snikGui {
 
     pub tx_proxy_event_receiver: Receiver<ProxyEvent>,
     pub proxy_events: Vec<ProxyEvent>,
-    pub sender_logs: Arc<Mutex<Sender<ErrorSend>>>,
 }
 
 /// message enum for interactions with the widgets
@@ -98,7 +99,7 @@ fn view_proxy_event(event: &ProxyEvent) -> iced::Element<'_, Message> {
     match event {
         //@todo: fix incomplete request complete parameters being shown
         // request complete proxyevent type
-         ProxyEvent::RequestComplete { .., request, .. } => {
+         ProxyEvent::RequestComplete {id: _ ,request, .. } => {
 
             let request_value = match_request_values(request.method());
             let uri_value = request.uri();
@@ -111,7 +112,7 @@ fn view_proxy_event(event: &ProxyEvent) -> iced::Element<'_, Message> {
              iced::widget::text(format!("HTTP \t {request_value:?} \t {uri_path_query:?}  {request_time:?}")).into()
          },
          
-         ProxyEvent::RequestIntercepted { .., request } => {
+         ProxyEvent::RequestIntercepted {id: _ ,request } => {
              let request_value = match_request_values(request.method());
              let uri_value = request.uri();
              let request_time = request.time();
@@ -124,7 +125,7 @@ fn view_proxy_event(event: &ProxyEvent) -> iced::Element<'_, Message> {
          },
          ProxyEvent::Error { message } => iced::widget::text(format!("{message}")).into(),
 
-         ProxyEvent::WebSocketConnected { .., request, .. } => {
+         ProxyEvent::WebSocketConnected { id: _, request, .. } => {
              let request_value = match_request_values(request.method());
              let uri_value = request.uri();
              let request_time = request.time();
@@ -143,7 +144,7 @@ impl L3snikGui {
     
     /// generates a new self object
     /// loads the default utilizing default Rust's trait derivation
-    fn new(tx_receiver: Receiver<ProxyEvent>, proxy_values: Vec<ProxyEvent>, sender_log: Arc<Mutex<Sender<ErrorSend>>>) -> (Self, Task<Message>) {
+    fn new(tx_receiver: Receiver<ProxyEvent>, proxy_values: Vec<ProxyEvent> ) -> (Self, Task<Message>) {
         
             (
                 L3snikGui {
@@ -154,7 +155,6 @@ impl L3snikGui {
                     loaded_file_string: "".to_string(),
                     tx_proxy_event_receiver: tx_receiver,
                     proxy_events: proxy_values,
-                    sender_logs: sender_log,
                 },
                 Task::none(),
 
@@ -270,16 +270,16 @@ impl L3snikGui {
 
                             }
                         }
-                        let proxy_formatted = self.proxy_events.into_iter().map(|value| view_proxy_event(&value));
+                        let proxy_formatted = column(self.proxy_events.into_iter().map(|value| view_proxy_event(&value)));
 
                         row![
-                            column![
-                                Scrollable::new(proxy_formatted)
-                                .width(Length::Fill)
-                                .height(Length::Fill)
-                                .direction(Direction::Vertical(Scrollbar::new())),
-                            ].width(Length::FillPortion(2)),
-                            column![].width(Length::FillPortion(3)),
+                         column![
+                             Scrollable::new(proxy_formatted)
+                             .width(Length::Fill)
+                             .height(Length::Fill)
+                             .direction(Direction::Vertical(Scrollbar::new())),
+                         ].width(Length::FillPortion(2)),
+                         column![].width(Length::FillPortion(3)),
                         ]
                     }
 
@@ -294,7 +294,6 @@ impl L3snikGui {
             ].into()
           }  
         }    
-    /// event listener, currently only listens to the Ctrl+Q command, TODO: fix it, this shit doesn't work
     fn subscription(&self) -> iced::Subscription<Message> {
         event::listen_with( |event, _, _| match event {
             Event::Keyboard(keyboard::Event::KeyPressed { key, modifiers, ..})
@@ -311,20 +310,23 @@ impl L3snikGui {
         })
     }
 }
-impl L3snikGui {
-    pub fn start(tx_proxy_receiver: Receiver<ProxyEvent>, tx_log_sender: Arc<Mutex<Sender<ErrorSend>>>) -> Result<(), ()> {
-        let receiver = Arc::new(Mutex::new(Some(tx_proxy_receiver)));
-        let mut proxy_values : Vec<ProxyEvent> = Vec::new(); 
-        let sender = Arc::new(Mutex::new(Some(tx_log_sender)));
 
+// I separated the implements so that it is easier to see the actual iced commands and the
+// start function to be used at the exterior
+impl L3snikGui {
+    pub fn start(tx_proxy_receiver: Receiver<ProxyEvent>, tx_log_sender: Sender<ErrorSend>) -> Result<(), ()> {
+        let receiver = Arc::new(Mutex::new(Some(tx_proxy_receiver)));
         match iced::application(
                move || {
             let rx = receiver
-                .lock()
+                .try_lock()
                 .unwrap()
                 .take()
                 .expect("L3snikGui boot called more than once");
-            L3snikGui::new(rx,proxy_values,tx_log_sender)
+            let  proxy_values : Vec<ProxyEvent> = Vec::new();
+            
+
+            L3snikGui::new(rx,proxy_values)
         },
 
          L3snikGui::update,
@@ -352,7 +354,7 @@ impl L3snikGui {
         .subscription(L3snikGui::subscription)
         .run() {
             Ok(_) => {},
-            Err(_) => {tx_log_sender.send(Err("something went wrong on the app startup").expect("the logger isn't working, shutting down"));},
+            Err(_) => {tx_log_sender.try_send(Err("something went wrong on the app startup").expect("the logger isn't working, shutting down"));},
         };
         Ok(())
     }    
