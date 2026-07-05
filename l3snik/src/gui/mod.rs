@@ -6,6 +6,7 @@ use iced::{ Alignment, Event, Length, Size, Task, event::{self}, keyboard, widge
 
 //std imports
 use std::{error::Error, path::PathBuf};
+use std::cell::RefCell;
 
 use crate::gui::project::choose_file;
 
@@ -37,8 +38,7 @@ pub struct L3snikGui {
     //loaded file as a string
     loaded_file_string: String,
 
-    pub tx_proxy_event_receiver: Receiver<ProxyEvent>,
-    pub proxy_events: Vec<ProxyEvent>,
+    pub tx_proxy_event_receiver: RefCell<Receiver<ProxyEvent>>,
 }
 
 /// message enum for interactions with the widgets
@@ -95,7 +95,7 @@ fn match_request_values(method: &Method) -> String {
 
 ///view_proxy_event formats any given proxyEvent into a Element accepted by iced
 /// in this function we extract the values we want to show to the user in the proxy history
-fn view_proxy_event(event: &ProxyEvent) -> iced::Element<'_, Message> {
+fn view_proxy_event(event: ProxyEvent) -> iced::Element<'static ,Message> {
     match event {
         //@todo: fix incomplete request complete parameters being shown
         // request complete proxyevent type
@@ -144,7 +144,7 @@ impl L3snikGui {
     
     /// generates a new self object
     /// loads the default utilizing default Rust's trait derivation
-    fn new(tx_receiver: Receiver<ProxyEvent>, proxy_values: Vec<ProxyEvent> ) -> (Self, Task<Message>) {
+    fn new(tx_receiver: RefCell<Receiver<ProxyEvent>>) -> (Self, Task<Message>) {
         
             (
                 L3snikGui {
@@ -154,7 +154,6 @@ impl L3snikGui {
                     loaded_file: None,
                     loaded_file_string: "".to_string(),
                     tx_proxy_event_receiver: tx_receiver,
-                    proxy_events: proxy_values,
                 },
                 Task::none(),
 
@@ -258,19 +257,23 @@ impl L3snikGui {
                 match self.project_state {
 
                     GuiToolPage::Proxy => {
-                        while let value = self.tx_proxy_event_receiver.try_recv() {
-                            match value {
-                                Ok(proxy_event) => self.proxy_events.push(proxy_event),
+                        let mut proxy_events: Vec<ProxyEvent> = Vec::new();
+                        let mut event_receiver = self.tx_proxy_event_receiver.borrow_mut();
+                        // this is not irrefutable, it breaks whenever the error goes empty,
+                        // however I decided to match them as it will be important for error handling without outright killing the gui
+                        loop {
+
+                            match event_receiver.try_recv() {
+                                Ok(proxy_event) => proxy_events.push(proxy_event),
                                 // todo add additional GUI for this
                                 Err(error) => match error {
                                     TryRecvError::Empty => break,
-                                    TryRecvError::Disconnected => (),  
+                                    TryRecvError::Disconnected => break,  
                                 }
-                                
-
                             }
-                        }
-                        let proxy_formatted = column(self.proxy_events.into_iter().map(|value| view_proxy_event(&value)));
+                        };
+
+                        let proxy_formatted = column(proxy_events.into_iter().map(|value| view_proxy_event(value)));
 
                         row![
                          column![
@@ -315,7 +318,7 @@ impl L3snikGui {
 // start function to be used at the exterior
 impl L3snikGui {
     pub fn start(tx_proxy_receiver: Receiver<ProxyEvent>, tx_log_sender: Sender<ErrorSend>) -> Result<(), ()> {
-        let receiver = Arc::new(Mutex::new(Some(tx_proxy_receiver)));
+        let receiver = Arc::new(Mutex::new(Some(RefCell::new(tx_proxy_receiver))));
         match iced::application(
                move || {
             let rx = receiver
@@ -323,10 +326,9 @@ impl L3snikGui {
                 .unwrap()
                 .take()
                 .expect("L3snikGui boot called more than once");
-            let  proxy_values : Vec<ProxyEvent> = Vec::new();
             
 
-            L3snikGui::new(rx,proxy_values)
+            L3snikGui::new(rx)
         },
 
          L3snikGui::update,
@@ -354,7 +356,7 @@ impl L3snikGui {
         .subscription(L3snikGui::subscription)
         .run() {
             Ok(_) => {},
-            Err(_) => {tx_log_sender.try_send(Err("something went wrong on the app startup").expect("the logger isn't working, shutting down"));},
+            Err(_) => {tx_log_sender.try_send(Err("something went wrong on the app startup").expect("the logger isn't working, shutting down")).expect("error happened sending to log, shutting down");},
         };
         Ok(())
     }    

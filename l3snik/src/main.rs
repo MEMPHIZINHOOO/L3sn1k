@@ -6,8 +6,11 @@ mod tests;
 use std::env;
 use std::net::{SocketAddr,IpAddr, Ipv4Addr};
 use std::error::Error;
+use std::thread::sleep;
+use std::time::Duration;
 
 use tools::proxy::{instantiate_proxy};
+
 
 use tokio::main;
 use tokio::sync::mpsc;
@@ -42,6 +45,9 @@ async fn main() {
     unsafe {
         std::env::set_var("WGPU_POWER_PREF", "high");
     }
-
-    gui::L3snikGui::start(tx_receiver_proxy_info, tx_sender_error_info.clone());
+    
+    match gui::L3snikGui::start(tx_receiver_proxy_info, tx_sender_error_info.clone()) {
+        Ok(_) => {println!("shutting down now");},
+        Err(_) => {println!("waiting for restart"); sleep(Duration::from_secs(1));}
+    }
 } 
