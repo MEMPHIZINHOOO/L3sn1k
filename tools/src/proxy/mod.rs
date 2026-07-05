@@ -7,7 +7,7 @@ use std::{ error::Error,
 
 use proxelar::{Proxy, ProxyConfig, ProxyEvent, UpstreamTlsConfig};
 
-use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::{PermitIterator, Sender};
 
 use certgenutil::{ load_cert_from_pem_file};
 
@@ -51,10 +51,10 @@ pub async fn instantiate_proxy(arg: SocketAddr, tx_proxy: Sender<ProxyEvent>, tx
     };
     let proxy = Proxy::new(proxy_config);
 
-    if let Err(_) =proxy.start( async { }).await {
+    if let Err(error) =proxy.start( async { }).await {
         //also handle this better
         //@todo: fix improper error handling, proxy error should be able to grab the Err from inside proxelar and cast it upwards in our own notation
-        tx_log.send(Box::new(ProxyErrors { error: "proxy failed to start or failed during execution".to_string()})).await.expect("the logging is not working properly");
+        tx_log.send(Box::new(error)).await.expect("the logging is not working properly");
         ()
     }
     
