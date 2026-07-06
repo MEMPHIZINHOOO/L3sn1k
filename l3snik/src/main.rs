@@ -5,19 +5,19 @@ mod tests;
 //imports
 use std::env;
 use std::net::{SocketAddr,IpAddr, Ipv4Addr};
-use std::error::Error;
 use std::thread::sleep;
 use std::time::Duration;
 
 use tools::proxy::{instantiate_proxy};
-
+use tools::logging::log_and_fix;
 
 use tokio::main;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 
-type ErrorSend = Box<dyn Error + Send + 'static>;
+use anyhow::Error;
+
 #[main]
 async fn main() {
         
@@ -30,9 +30,9 @@ async fn main() {
 
     // channel for communication from proxy, gui, and any other async info
     // into logging task
-    let (tx_sender_error_info, _tx_receiver_error_info) : (
-    Sender<ErrorSend>,
-    Receiver<ErrorSend>
+    let (tx_sender_error_info, tx_receiver_error_info) : (
+    Sender<Error>,
+    Receiver<Error>
 ) = mpsc::channel(5);
 
     //multiple, and I mean, plenty of tasks, will be sending information for logging purposes
@@ -41,6 +41,7 @@ async fn main() {
     
     
     tokio::spawn(instantiate_proxy(address, tx_sender_proxy_info, tx_sender_error_info.clone()));
+    tokio::spawn( log_and_fix(tx_receiver_error_info));
 
     unsafe {
         std::env::set_var("WGPU_POWER_PREF", "high");

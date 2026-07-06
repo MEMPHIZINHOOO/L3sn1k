@@ -317,7 +317,7 @@ impl L3snikGui {
 // I separated the implements so that it is easier to see the actual iced commands and the
 // start function to be used at the exterior
 impl L3snikGui {
-    pub fn start(tx_proxy_receiver: Receiver<ProxyEvent>, tx_log_sender: Sender<ErrorSend>) -> Result<(), ()> {
+    pub fn start(tx_proxy_receiver: Receiver<ProxyEvent>, tx_log_sender: Sender<anyhow::Error>) -> Result<(), ()> {
         let receiver = Arc::new(Mutex::new(Some(RefCell::new(tx_proxy_receiver))));
         match iced::application(
                move || {
@@ -356,7 +356,7 @@ impl L3snikGui {
         .subscription(L3snikGui::subscription)
         .run() {
             Ok(_) => {},
-            Err(_) => {tx_log_sender.try_send(Err("something went wrong on the app startup").expect("the logger isn't working, shutting down")).expect("error happened sending to log, shutting down");},
+            Err(error) => {tx_log_sender.try_send(anyhow::Error::new(error));},
         };
         Ok(())
     }    

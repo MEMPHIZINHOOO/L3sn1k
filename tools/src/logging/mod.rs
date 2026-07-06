@@ -12,7 +12,7 @@ use tokio::sync::mpsc::Receiver;
 /// log and fix is a big function that tries to resolve all errors
 /// most of the times by throwing, for example, the proxy, back into
 /// running, this is relevant for many reasons.
-pub fn log_and_fix(mut arg: Receiver<Box<Error>>) {
+pub async fn log_and_fix(mut arg: Receiver<Error>) {
     loop {
         //@TODO  still to be implemented
         match arg.blocking_recv() {
