@@ -5,7 +5,7 @@ use iced::{ Alignment, Event, Length, Size, Task, event::{self}, keyboard, widge
     }, window};
 
 //std imports
-use std::{error::Error, path::PathBuf};
+use std::path::PathBuf;
 use std::cell::RefCell;
 
 use crate::gui::project::choose_file;
@@ -26,7 +26,6 @@ mod project;
 /// it is ran calling the start() command, and has no other public available methods, as those
 /// are made for interaction with the iced crated directly
 
-type ErrorSend = Box<dyn Error + Send + 'static>;
 
 pub struct L3snikGui {
     init_state: InitPage,
@@ -317,7 +316,7 @@ impl L3snikGui {
 // I separated the implements so that it is easier to see the actual iced commands and the
 // start function to be used at the exterior
 impl L3snikGui {
-    pub fn start(tx_proxy_receiver: Receiver<ProxyEvent>, tx_log_sender: Sender<ErrorSend>) -> Result<(), ()> {
+    pub fn start(tx_proxy_receiver: Receiver<ProxyEvent>, tx_log_sender: Sender<anyhow::Error>) -> Result<(), ()> {
         let receiver = Arc::new(Mutex::new(Some(RefCell::new(tx_proxy_receiver))));
         match iced::application(
                move || {
@@ -356,7 +355,7 @@ impl L3snikGui {
         .subscription(L3snikGui::subscription)
         .run() {
             Ok(_) => {},
-            Err(_) => {tx_log_sender.try_send(Err("something went wrong on the app startup").expect("the logger isn't working, shutting down")).expect("error happened sending to log, shutting down");},
+            Err(error) => {tx_log_sender.try_send(anyhow::Error::new(error)).expect("log sender isn't working, shutting down now");},
         };
         Ok(())
     }    

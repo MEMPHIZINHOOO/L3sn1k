@@ -6,19 +6,32 @@
 ///
 
 use anyhow::Error;
+use proxelar::ProxyEvent;
 use tokio::sync::mpsc::Receiver;
 
 
 /// log and fix is a big function that tries to resolve all errors
 /// most of the times by throwing, for example, the proxy, back into
 /// running, this is relevant for many reasons.
-pub fn log_and_fix(mut arg: Receiver<Box<Error>>) {
-    loop {
+pub async fn log_and_fix(mut error_receiver: Receiver<Error>, proxy_receiver_option: Option<Receiver<ProxyEvent>>) {
+    if let Some(mut proxy_receiver) = proxy_receiver_option {
+        loop {
+            tokio::select! {
+                val = error_receiver.recv() => { eprintln!("{val:?}");}
+                // print debug feature for seeing whether it grabs requests
+                _val = proxy_receiver.recv() => { println!("got a request");}
+            }
+        }    
+    }
+
+    else { 
+        loop {
         //@TODO  still to be implemented
-        match arg.blocking_recv() {
-            Some(error) => eprintln!("{error:?}"),
-                // malformed http request
-            _ => (),
+            match error_receiver.recv().await {
+                Some(error) => eprintln!("{error:?}"),
+                    // malformed http request
+                _ => (),
+                }
         }
     }
 }
