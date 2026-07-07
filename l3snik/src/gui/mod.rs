@@ -5,7 +5,7 @@ use iced::{ Alignment, Event, Length, Size, Task, event::{self}, keyboard, widge
     }, window};
 
 //std imports
-use std::{error::Error, path::PathBuf};
+use std::path::PathBuf;
 use std::cell::RefCell;
 
 use crate::gui::project::choose_file;
@@ -26,7 +26,6 @@ mod project;
 /// it is ran calling the start() command, and has no other public available methods, as those
 /// are made for interaction with the iced crated directly
 
-type ErrorSend = Box<dyn Error + Send + 'static>;
 
 pub struct L3snikGui {
     init_state: InitPage,
@@ -356,7 +355,7 @@ impl L3snikGui {
         .subscription(L3snikGui::subscription)
         .run() {
             Ok(_) => {},
-            Err(error) => {tx_log_sender.try_send(anyhow::Error::new(error));},
+            Err(error) => {tx_log_sender.try_send(anyhow::Error::new(error)).expect("log sender isn't working, shutting down now");},
         };
         Ok(())
     }    

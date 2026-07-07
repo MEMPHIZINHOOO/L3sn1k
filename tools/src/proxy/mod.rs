@@ -1,4 +1,3 @@
-use core::fmt;
 use std::{ 
     fs::{self, DirEntry,},
     net::SocketAddr,
@@ -37,7 +36,7 @@ pub async fn instantiate_proxy(arg: SocketAddr, tx_proxy: Sender<ProxyEvent>, tx
     };
     let proxy = Proxy::new(proxy_config);
 
-    if let Err(error) =proxy.start( async { }).await {
+    if let Err(error) =proxy.start(std::future::pending::<()>()).await {
         //also handle this better
         //@todo: fix improper error handling, proxy error should be able to grab the Err from inside proxelar and cast it upwards in our own notation
         tx_log.send(anyhow::Error::new(error)).await.expect("the logging is not working properly");
@@ -67,7 +66,7 @@ pub fn check_init_ca_dir() -> Result<(), String> {
 
                 let name: String = match DirEntry::file_name(&entry).into_string() {
                     Ok(entry_name) => entry_name,
-                    Err(error) => return Err("failed to match the dir entry to the file".to_string()),
+                    Err(_) => return Err("failed to match the dir entry to the file".to_string()),
                 };
 
                 if checks.contains(&name)
@@ -75,7 +74,7 @@ pub fn check_init_ca_dir() -> Result<(), String> {
                         //@todo: add verification of proper CA, and proper error handling«
                         match load_cert_from_pem_file(entry_path) {
                             Ok(file_cert) => file_cert,
-                            Err(error) => return Err("failed to load the cert from the pem file".to_string()),
+                            Err(_) => return Err("failed to load the cert from the pem file".to_string()),
                         };
                     
                     }                
