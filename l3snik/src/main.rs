@@ -4,7 +4,6 @@ mod tests;
 
 use anyhow::Error;
 //imports
-use std::env;
 use std::net::{SocketAddr,IpAddr, Ipv4Addr};
 use std::thread::sleep;
 use std::time::Duration;
@@ -17,16 +16,24 @@ use tokio::sync::mpsc;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 
+use clap::Parser;
+
+#[derive(Parser)]
+
+struct Cli {
+    port: String,
+    debug: Option<String>,
+}
+
 #[main]
 async fn main() {
-        
-    let mut arguments: Vec<String> = env::args().collect();
-    let debug = arguments.pop();
-    let port_input = arguments.pop();
-
-    // verifying for argument
-    // keep in mind the debug command currently is being verified for the proxy
-    // requests alone, it DOES NOT work for debugging gui related commands
+    let args = Cli::parse();
+    println!("port: {:?}, debug: {:?}", args.port, args.debug);
+    let debug = args.debug;
+    let port_input = args.port;
+ // verifying for argument
+ // keep in mind the debug command currently is being verified for the proxy
+ // requests alone, it DOES NOT work for debugging gui related commands
     if let Some(ref debug_string) = debug {
         if *debug_string != "debug".to_string() {
             println!("the second argument is invalid.");
@@ -34,7 +41,7 @@ async fn main() {
         }
     }
 
-    let address: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port_input.expect("not a valid port").parse().expect("not a valid port"));
+    let address: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port_input.parse().expect("not a valid port"));
 
     // channel for communication from gui to proxy    
     let (tx_sender_gui_proxy_info, tx_receiver_gui_proxy_info) = mpsc::channel(1);

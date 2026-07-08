@@ -3,16 +3,16 @@
 use iced::{ Alignment, Event, Length, Size, Subscription, Task, event::{self}, keyboard, widget::{Scrollable, button, column, radio, row, rule, scrollable::{Direction, Scrollbar},
     // sensor::Key, text},
     }, window};
-
+use iced::futures::SinkExt;
 //std imports
 use std::path::PathBuf;
+use std::sync::OnceLock;
+use std::sync::Mutex;
 
 use crate::gui::project::choose_file;
 
 //tokio imports
 use tokio::sync::{mpsc::{Receiver, Sender}};
-use tokio::sync::Mutex;
-use std::sync::Arc;
 //proxelar imports
 use proxelar::ProxyEvent;
 
@@ -21,14 +21,20 @@ use http::Method;
 
 mod project;
 
-fn proxy_event_stream(receiver: Arc<Mutex<Option<Receiver<ProxyEvent>>>>) -> impl iced::futures::Stream<Item = Message> {
-    iced::stream::channel(100, move | mut output| async move {
+static PROXY_RX: OnceLock<Mutex<Option<Receiver<ProxyEvent>>>> = OnceLock::new();
+
+fn proxy_event_stream() -> impl iced::futures::Stream<Item = Message> {
+    iced::stream::channel(100, |mut output: iced::futures::channel::mpsc::Sender<Message>| async move {
+        let mut rx = PROXY_RX.get().expect("proxy_rx is not currently initialized")
+            .lock().unwrap().take().expect("the proxy receiver is currently being used by another context");
 
         while let Some(event) = rx.recv().await {
-            let _ = output.send(Message::UpdatedProxy(event)).await;
+            if output.send(Message::UpdatedProxy(event)).await.is_err() {
+                break;
+            }
         }
     })
-} 
+}
 /// struct L3snikGui is responsible for the abstraction of the overall app and it's components
 /// it is ran calling the start() command, and has no other public available methods, as those
 /// are made for interaction with the iced crated directly
@@ -48,7 +54,6 @@ pub struct L3snikGui {
     //proxy respective vector
     proxy_vector: Vec<ProxyEvent>,
     //proxy receiver channel
-    pub tx_proxy_event_receiver: Arc<Mutex<Option<Receiver<ProxyEvent>>>>,
 }
 
 /// message enum for interactions with the widgets
@@ -156,7 +161,7 @@ impl L3snikGui {
     
     /// generates a new self object
     /// loads the default utilizing default Rust's trait derivation
-    fn new(tx_receiver: Arc<Mutex<Option<Receiver<ProxyEvent>>>>) -> (Self, Task<Message>) {
+    fn new() -> (Self, Task<Message>) {
         
             (
                 L3snikGui {
@@ -165,7 +170,6 @@ impl L3snikGui {
                     project_selection: Some(0),
                     loaded_file: None,
                     loaded_file_string: "".to_string(),
-                    tx_proxy_event_receiver: tx_receiver,
                     proxy_vector: Vec::new(),
                 },
                 Task::none(),
@@ -306,7 +310,6 @@ impl L3snikGui {
         }
     
     fn subscription(&self) -> iced::Subscription<Message> {
-        let holder = self.tx_proxy_event_receiver.clone();
         let keyboard_sub = event::listen_with( |event, _, _| match event {
             Event::Keyboard(keyboard::Event::KeyPressed { key, modifiers, ..})
             if modifiers.control() => {
@@ -320,7 +323,7 @@ impl L3snikGui {
         }
         _ => None,    
         });
-        let proxy_sub = iced::Subscription::run_with("proxy-events", proxy_event_stream(holder));        
+        let proxy_sub = iced::Subscription::run(proxy_event_stream);        
 
         Subscription::batch(vec![keyboard_sub, proxy_sub])
     }
@@ -330,18 +333,9 @@ impl L3snikGui {
 // start function to be used at the exterior
 impl L3snikGui {
     pub fn start(tx_proxy_receiver: Receiver<ProxyEvent>, tx_log_sender: Sender<anyhow::Error>) -> Result<(), ()> {
-        let receiver = Arc::new(Mutex::new(Some(tx_proxy_receiver)));
-        match iced::application(
-               move || {
-            // let rx = Some(receiver
-            //     .try_lock()
-            //     .unwrap()
-            //     .expect("L3snikGui boot called more than once"));
-            
-
-            L3snikGui::new(receiver)
-        },
-
+        //@TODO fix this no error handling
+        let _ = PROXY_RX.set(Mutex::new(Some(tx_proxy_receiver)));        
+        match iced::application(L3snikGui::new,
          L3snikGui::update,
          L3snikGui::view
          ).window(iced::window::Settings {
