@@ -1,18 +1,16 @@
 
 // iced imports
-use iced::{ Alignment, Event, Length, Size, Task, event::{self}, keyboard, widget::{Scrollable, button, column, radio, row, rule, scrollable::{Direction, Scrollbar},
+use iced::{ Alignment, Event, Length, Size, Subscription, Task, event::{self}, keyboard, widget::{Scrollable, button, column, radio, row, rule, scrollable::{Direction, Scrollbar},
     // sensor::Key, text},
     }, window};
 
 //std imports
 use std::path::PathBuf;
-use std::cell::RefCell;
 
 use crate::gui::project::choose_file;
 
 //tokio imports
 use tokio::sync::{mpsc::{Receiver, Sender}};
-use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::Mutex;
 use std::sync::Arc;
 //proxelar imports
@@ -22,13 +20,23 @@ use proxelar::ProxyEvent;
 use http::Method;
 
 mod project;
+
+fn proxy_event_stream(receiver: Arc<Mutex<Option<Receiver<ProxyEvent>>>>) -> impl iced::futures::Stream<Item = Message> {
+    iced::stream::channel(100, move | mut output| async move {
+
+        while let Some(event) = rx.recv().await {
+            let _ = output.send(Message::UpdatedProxy(event)).await;
+        }
+    })
+} 
 /// struct L3snikGui is responsible for the abstraction of the overall app and it's components
 /// it is ran calling the start() command, and has no other public available methods, as those
 /// are made for interaction with the iced crated directly
 
-
 pub struct L3snikGui {
+    // init page state machine
     init_state: InitPage,
+    //gui tool page state machine
     project_state: GuiToolPage,
     // project seleection structs
     project_selection :Option<u32>,
@@ -37,7 +45,10 @@ pub struct L3snikGui {
     //loaded file as a string
     loaded_file_string: String,
 
-    pub tx_proxy_event_receiver: RefCell<Receiver<ProxyEvent>>,
+    //proxy respective vector
+    proxy_vector: Vec<ProxyEvent>,
+    //proxy receiver channel
+    pub tx_proxy_event_receiver: Arc<Mutex<Option<Receiver<ProxyEvent>>>>,
 }
 
 /// message enum for interactions with the widgets
@@ -54,6 +65,8 @@ pub enum Message {
 
     // proxy page
     Proxy,
+    //updated proxy message with the newly done events
+    UpdatedProxy(ProxyEvent),
     // repeater page
     Repeater,
     // target page
@@ -143,7 +156,7 @@ impl L3snikGui {
     
     /// generates a new self object
     /// loads the default utilizing default Rust's trait derivation
-    fn new(tx_receiver: RefCell<Receiver<ProxyEvent>>) -> (Self, Task<Message>) {
+    fn new(tx_receiver: Arc<Mutex<Option<Receiver<ProxyEvent>>>>) -> (Self, Task<Message>) {
         
             (
                 L3snikGui {
@@ -153,6 +166,7 @@ impl L3snikGui {
                     loaded_file: None,
                     loaded_file_string: "".to_string(),
                     tx_proxy_event_receiver: tx_receiver,
+                    proxy_vector: Vec::new(),
                 },
                 Task::none(),
 
@@ -187,6 +201,7 @@ impl L3snikGui {
                 }
                            Task::none()
             }
+
             Message::Continue => {
                 self.init_state = InitPage::Project;
                 return window::latest().and_then(Self::resize_window(1600.0, 1080.0))
@@ -197,7 +212,13 @@ impl L3snikGui {
                 self.project_state = GuiToolPage::Proxy;
                 Task::none()    
             }
-            
+
+
+            Message::UpdatedProxy(data) => {
+                self.proxy_vector.push(data);
+                iced::Task::none()    
+            }
+
             Message::Repeater => {
                 self.project_state = GuiToolPage::Repeater;
                 Task::none()    
@@ -256,24 +277,11 @@ impl L3snikGui {
                 match self.project_state {
 
                     GuiToolPage::Proxy => {
-                        let mut proxy_events: Vec<ProxyEvent> = Vec::new();
-                        let mut event_receiver = self.tx_proxy_event_receiver.borrow_mut();
                         // this is not irrefutable, it breaks whenever the error goes empty,
                         // however I decided to match them as it will be important for error handling without outright killing the gui
-                        loop {
-
-                            match event_receiver.try_recv() {
-                                Ok(proxy_event) => proxy_events.push(proxy_event),
-                                // todo add additional GUI for this
-                                Err(error) => match error {
-                                    TryRecvError::Empty => break,
-                                    TryRecvError::Disconnected => break,  
-                                }
-                            }
-                        };
-
-                        let proxy_formatted = column(proxy_events.into_iter().map(|value| view_proxy_event(value)));
-
+                        
+                        let proxy_formatted = column(self.proxy_vector.clone().into_iter().map(|value| view_proxy_event(value)));
+                        
                         row![
                          column![
                              Scrollable::new(proxy_formatted)
@@ -295,9 +303,11 @@ impl L3snikGui {
                 }
             ].into()
           }  
-        }    
+        }
+    
     fn subscription(&self) -> iced::Subscription<Message> {
-        event::listen_with( |event, _, _| match event {
+        let holder = self.tx_proxy_event_receiver.clone();
+        let keyboard_sub = event::listen_with( |event, _, _| match event {
             Event::Keyboard(keyboard::Event::KeyPressed { key, modifiers, ..})
             if modifiers.control() => {
                 match key{
@@ -309,7 +319,10 @@ impl L3snikGui {
                 }
         }
         _ => None,    
-        })
+        });
+        let proxy_sub = iced::Subscription::run_with("proxy-events", proxy_event_stream(holder));        
+
+        Subscription::batch(vec![keyboard_sub, proxy_sub])
     }
 }
 
@@ -317,17 +330,16 @@ impl L3snikGui {
 // start function to be used at the exterior
 impl L3snikGui {
     pub fn start(tx_proxy_receiver: Receiver<ProxyEvent>, tx_log_sender: Sender<anyhow::Error>) -> Result<(), ()> {
-        let receiver = Arc::new(Mutex::new(Some(RefCell::new(tx_proxy_receiver))));
+        let receiver = Arc::new(Mutex::new(Some(tx_proxy_receiver)));
         match iced::application(
                move || {
-            let rx = receiver
-                .try_lock()
-                .unwrap()
-                .take()
-                .expect("L3snikGui boot called more than once");
+            // let rx = Some(receiver
+            //     .try_lock()
+            //     .unwrap()
+            //     .expect("L3snikGui boot called more than once"));
             
 
-            L3snikGui::new(rx)
+            L3snikGui::new(receiver)
         },
 
          L3snikGui::update,
