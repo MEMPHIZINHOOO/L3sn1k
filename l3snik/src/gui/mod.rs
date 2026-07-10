@@ -1,16 +1,17 @@
 
 // iced imports
-use iced::{ Alignment, Event, Length, Size, Subscription, Task, event::{self}, keyboard, widget::{Scrollable, button, column, radio, row, rule, scrollable::{Direction, Scrollbar},
+use iced::{ Alignment, Color, Event, Length, Size, Subscription, Task, event::{self}, keyboard, widget::{Scrollable, button, column, radio, row, rule, scrollable::{Direction, Scrollbar},
     // sensor::Key, text},
     }, window};
 use iced::futures::SinkExt;
+use proxelar_models::ProxiedRequest;
 //std imports
 use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::sync::Mutex;
 
 use crate::gui::project::choose_file;
-
+use crate::gui::project::ProxyEventWidget;
 //tokio imports
 use tokio::sync::{mpsc::{Receiver, Sender}};
 //proxelar imports
@@ -94,6 +95,7 @@ pub enum GuiToolPage {
     Proxy,
     
 }
+///  match enum to string
 fn match_request_values(method: &Method) -> String {
      match *method {
          Method::OPTIONS => "OPTIONS".to_string(),
@@ -109,15 +111,8 @@ fn match_request_values(method: &Method) -> String {
          _ => "GET".to_string(),
      }
 } 
-
-///view_proxy_event formats any given proxyEvent into a Element accepted by iced
-/// in this function we extract the values we want to show to the user in the proxy history
-fn view_proxy_event(event: ProxyEvent) -> iced::Element<'static ,Message> {
-    match event {
-        //@todo: fix incomplete request complete parameters being shown
-        // request complete proxyevent type
-         ProxyEvent::RequestComplete {id: _ ,request, .. } => {
-
+//formats a request into a new widget object
+fn format_event(request: Box<ProxiedRequest>) -> iced::Element<'static, Message> {
             let request_value = match_request_values(request.method());
             let uri_value = request.uri();
             let request_time = request.time();
@@ -126,32 +121,26 @@ fn view_proxy_event(event: ProxyEvent) -> iced::Element<'static ,Message> {
                 Some(path_value) => path_value.as_str().to_string(),
                 None => "ERROR: no URL found, check for proxy logging".to_string()
             };
-             iced::widget::text(format!("HTTP \t {request_value:?} \t {uri_path_query:?}  {request_time:?}")).into()
+            
+            ProxyEventWidget::new(request,format!("HTTP \t {request_value:?} \t {uri_path_query:?}  {request_time:?}")).into()    
+}
+///view_proxy_event formats any given proxyEvent into a Element accepted by iced
+/// in this function we extract the values we want to show to the user in the proxy history
+fn view_proxy_event(event: ProxyEvent) -> iced::Element<'static ,Message> {
+    match event {
+        //@todo: fix incomplete request complete parameters being shown
+        // request complete proxyevent type
+         ProxyEvent::RequestComplete {id: _ ,request, .. } => {
+            format_event(request)
          },
          
          ProxyEvent::RequestIntercepted {id: _ ,request } => {
-             let request_value = match_request_values(request.method());
-             let uri_value = request.uri();
-             let request_time = request.time();
-
-             let uri_path_query = match uri_value.path_and_query() {
-                Some(path_value) => path_value.as_str().to_string(),
-                None => "ERROR: no URL found, check for proxy logging".to_string()
-             };
-             iced::widget::text(format!("HTTP \t {request_value:?} \t {uri_path_query:?}  {request_time:?}")).into()
+            format_event(request)
          },
          ProxyEvent::Error { message } => iced::widget::text(format!("{message}")).into(),
 
          ProxyEvent::WebSocketConnected { id: _, request, .. } => {
-             let request_value = match_request_values(request.method());
-             let uri_value = request.uri();
-             let request_time = request.time();
-
-             let uri_path_query = match uri_value.path_and_query() {
-                Some(path_value) => path_value.as_str().to_string(),
-                None => "ERROR: no URL found, check for proxy logging".to_string()
-             };
-             iced::widget::text(format!("WS \t {request_value:?} \t {uri_path_query:?}  {request_time:?}")).into()
+             format_event(request)
          },
         _ => iced::widget::text(format!("non implemented websocket frames and closing")).into(),
     }
