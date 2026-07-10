@@ -281,8 +281,6 @@ impl L3snikGui {
                 match self.project_state {
 
                     GuiToolPage::Proxy => {
-                        // this is not irrefutable, it breaks whenever the error goes empty,
-                        // however I decided to match them as it will be important for error handling without outright killing the gui
                         
                         let proxy_formatted = column(self.proxy_vector.clone().into_iter().map(|value| view_proxy_event(value)));
                         
