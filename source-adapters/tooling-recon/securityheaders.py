@@ -1,7 +1,6 @@
 import requests
 from requests.exceptions import Timeout, HTTPError, SSLError, RequestException, TooManyRedirects, ConnectionError
 
-
 headerslist = [
     # Core security headers
     "Strict-Transport-Security",
