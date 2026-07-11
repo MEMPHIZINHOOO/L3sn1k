@@ -5,7 +5,7 @@ corsheaders=["Access-Control-Allow-Origin","Access-Control-Allow-Credentials","A
 
 corsheaderslistlower=[item.lower() for item in corsheaders]
 
-def corscheck(domain):
+def corscheck(domain, user_agent=None):
     presentheaders_normal={}
     presentheaders_origintest={}
     presentheaders_originnull={}

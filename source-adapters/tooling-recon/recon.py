@@ -1,11 +1,15 @@
 from requestrandomizer import randomizer
+from uas import ua
+
 
 def get_domain():  #gets the user input (domain)i
+    
     return input("Enter your target domain: ")
 
 domain=get_domain()
+uas_list = ua()
 
-request_sequence = randomizer(domain)
+request_sequence = randomizer(domain, uas_list)
 
 print(request_sequence)
 #fetchctr_response =fetchcrt(domain) #runs the adapter for this domain

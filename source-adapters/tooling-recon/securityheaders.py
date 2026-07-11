@@ -72,7 +72,7 @@ headerslist = [
 headerslistlower = [item.lower() for item in headerslist]
 
 
-def getheaders(domain):
+def getheaders(domain, user_agent=None):
 	presentheaders={}
 	try:
 		url =f"https://{domain}/"

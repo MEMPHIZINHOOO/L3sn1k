@@ -79,7 +79,7 @@ wellknownpaths = [
     "/.well-known/csaf-aggregator",
 ]
 
-def wellknownfinder(domain):
+def wellknownfinder(domain, user_agents=None):
 
     resultlist={}
 

@@ -2,7 +2,7 @@ import requests
 
 from wellknown_files_checker import wellknownfinder
 
-def robotsprinter(domain):
+def robotsprinter(domain, user_agent=None):
     
     result = wellknownfinder(domain)
     endpoint = result["/robots.txt"]

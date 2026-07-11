@@ -118,9 +118,9 @@ techheaders = [
 
 techheaderslower ={item.lower() for item in techheaders}
 
-def techfprinter(domain):
+def techfprinter(domain, user_agent=None):
     presentheaders= {}
-    response = requestit(domain)
+    response = requestit(domain, user_agent=user_agent)
     lowerheaders ={key.lower(): value for key, value in response.items()}
 
     for i in techheaderslower: #go through the techheaders list and checks if one of those headers exists in the response
