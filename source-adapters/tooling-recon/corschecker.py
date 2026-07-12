@@ -1,6 +1,5 @@
 from curl_cffi import requests
-from requests.exceptions import Timeout, HTTPError, SSLError, RequestException, TooManyRedirects, ConnectionError
-
+from curl_cffi.requests.exceptions import Timeout, HTTPError, SSLError, RequestException, TooManyRedirects, ConnectionError
 corsheaders=["Access-Control-Allow-Origin","Access-Control-Allow-Credentials","Access-Control-Allow-Methods","Access-Control-Allow-Headers","Access-Control-Expose-Headers","Access-Control-Max-Age","Vary","Access-Control-Allow-Private-Network",]
 
 corsheaderslistlower=[item.lower() for item in corsheaders]

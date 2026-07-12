@@ -1,5 +1,5 @@
 from curl_cffi import requests
-from requests.exceptions import Timeout, SSLError, ConnectionError, RequestException, TooManyRedirects
+from curl_cffi.requests.exceptions import Timeout,HTTPError, SSLError, RequestException, TooManyRedirects, ConnectionError
 
 
 wellknownpaths = [
@@ -107,6 +107,8 @@ def wellknownfinder(domain, bt="chrome"):
             resultlist[i]={"error":"too many redirects"}
         except ConnectionError:
             resultlist[i]={"error":"connection error"}
+        except HTTPError:
+            resultlist[i]={"error": "http error"}
         except RequestException:
             resultlist[i]={"error": "request exception"}
 
