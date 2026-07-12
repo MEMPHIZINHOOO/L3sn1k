@@ -1,4 +1,4 @@
-import requests
+from curl_cffi import requests
 from requests.exceptions import Timeout, HTTPError, SSLError, RequestException, TooManyRedirects, ConnectionError
 
 headerslist = [
@@ -72,11 +72,11 @@ headerslist = [
 headerslistlower = [item.lower() for item in headerslist]
 
 
-def getheaders(domain, user_agent=None):
+def getheaders(domain, bt="chrome"):
 	presentheaders={}
 	try:
 		url =f"https://{domain}/"
-		result = requests.get(url, timeout=3)
+		result = requests.get(url,impersonate=bt,timeout=3)
 		presentheaders["status-code"] = result.status_code
 		headers = result.headers
 		lowerheaders ={key.lower(): value for key, value in headers.items()}

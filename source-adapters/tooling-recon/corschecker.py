@@ -1,11 +1,11 @@
-import requests
+from curl_cffi import requests
 from requests.exceptions import Timeout, HTTPError, SSLError, RequestException, TooManyRedirects, ConnectionError
 
 corsheaders=["Access-Control-Allow-Origin","Access-Control-Allow-Credentials","Access-Control-Allow-Methods","Access-Control-Allow-Headers","Access-Control-Expose-Headers","Access-Control-Max-Age","Vary","Access-Control-Allow-Private-Network",]
 
 corsheaderslistlower=[item.lower() for item in corsheaders]
 
-def corscheck(domain, user_agent=None):
+def corscheck(domain, bt="chrome"):
     presentheaders_normal={}
     presentheaders_origintest={}
     presentheaders_originnull={}
@@ -31,7 +31,7 @@ def corscheck(domain, user_agent=None):
 
     #normal request
     try:
-        response_normal = requests.get(url, timeout=3)
+        response_normal = requests.get(url,impersonate=bt, timeout=3)
         presentheaders_normal["status-code"]=response_normal.status_code
         headers_normal =response_normal.headers
         lowerheaders_normal={key.lower(): value for key, value in headers_normal.items()}
@@ -56,7 +56,7 @@ def corscheck(domain, user_agent=None):
         
     #test case 1:(Origin: 'https://test.com')
     try:
-        response_origintest = requests.get(url, headers=origin_test, timeout=3)
+        response_origintest = requests.get(url,impersonate=bt, headers=origin_test, timeout=3)
         presentheaders_origintest["status-code"]= response_origintest.status_code
         headers_origintest = response_origintest.headers
         lowerheaders_origintest={key.lower(): value for key, value in headers_origintest.items()}
@@ -80,7 +80,7 @@ def corscheck(domain, user_agent=None):
 
     #test case 2:(Origin: null)
     try:
-        response_originnull = requests.get(url, headers=origin_null, timeout=3)
+        response_originnull = requests.get(url,impersonate=bt, headers=origin_null, timeout=3)
         presentheaders_originnull["status-code"] = response_originnull.status_code
         headers_originnull = response_originnull.headers
         lowerheaders_originnull={key.lower(): value for key, value in headers_originnull.items()}
@@ -104,7 +104,7 @@ def corscheck(domain, user_agent=None):
 
     #testcase 3 : (OPTIONS POST)
     try:
-        response_opost = requests.options(url, headers=options_post, timeout=3)
+        response_opost = requests.options(url,impersonate=bt,headers=options_post, timeout=3)
         presentheaders_opost["status-code"]= response_opost.status_code
         headers_opost = response_opost.headers
         lowerheaders_opost={key.lower(): value for key, value in headers_opost.items()}
@@ -128,7 +128,7 @@ def corscheck(domain, user_agent=None):
     
     #test case 4: OPTIONS PUT
     try:
-        response_oput = requests.options(url, headers=options_put, timeout=3)
+        response_oput = requests.options(url,impersonate=bt, headers=options_put, timeout=3)
         presentheaders_oput["status-code"]= response_oput.status_code
         headers_oput = response_oput.headers
         lowerheaders_oput={key.lower(): value for key, value in headers_oput.items()}
@@ -152,7 +152,7 @@ def corscheck(domain, user_agent=None):
         
     #test case 5: (OPTIONS PATCH)
     try:
-        response_opatch = requests.options(url, headers=options_patch, timeout=3)
+        response_opatch = requests.options(url,impersonate=bt, headers=options_patch, timeout=3)
         presentheaders_opatch["status-code"]=response_opatch.status_code
         headers_opatch = response_opatch.headers
         lowerheaders_opatch={key.lower(): value for key, value in headers_opatch.items()}
@@ -176,7 +176,7 @@ def corscheck(domain, user_agent=None):
         
     #test case 6: (OPTIONS DELETE)
     try:
-        response_odelete = requests.options(url, headers=options_delete, timeout=3)
+        response_odelete = requests.options(url,impersonate=bt, headers=options_delete, timeout=3)
         presentheaders_odelete["status-code"]= response_odelete.status_code
         headers_odelete = response_odelete.headers
         lowerheaders_odelete={key.lower(): value for key, value in headers_odelete.items()}
@@ -200,7 +200,7 @@ def corscheck(domain, user_agent=None):
 
     #test case 7: origin - target as prefix
     try:
-        response_evil = requests.get(url, headers=domain_evil,timeout=3 )
+        response_evil = requests.get(url,impersonate=bt, headers=domain_evil,timeout=3 )
         presentheaders_evil["status-code"]=response_evil.status_code
         headers_evil = response_evil.headers
         lowerheaders_evil={key.lower(): value for key, value in headers_evil.items()}
@@ -224,7 +224,7 @@ def corscheck(domain, user_agent=None):
         
     #test case 8: just http
     try:
-        response_http = requests.get(url, headers=http_origin, timeout=3)
+        response_http = requests.get(url,impersonate=bt, headers=http_origin, timeout=3)
         presentheaders_http["status-code"]=response_http.status_code
         headers_http = response_http.headers
         lowerheaders_http={key.lower(): value for key, value in headers_http.items()}
@@ -248,7 +248,7 @@ def corscheck(domain, user_agent=None):
         
     #test case 9:  OPTIONS PNA
     try:
-        response_pna = requests.options(url, headers=options_pna, timeout=3)
+        response_pna = requests.options(url,impersonate=bt, headers=options_pna, timeout=3)
         presentheaders_pna["status-code"]=response_pna.status_code
         headers_pna = response_pna.headers
         lowerheaders_pna={key.lower(): value for key, value in headers_pna.items()}

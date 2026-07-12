@@ -1,4 +1,4 @@
-import requests
+from curl_cffi import requests
 from requests.exceptions import Timeout, SSLError, ConnectionError, RequestException, TooManyRedirects
 
 
@@ -79,7 +79,7 @@ wellknownpaths = [
     "/.well-known/csaf-aggregator",
 ]
 
-def wellknownfinder(domain, user_agents=None):
+def wellknownfinder(domain, bt="chrome"):
 
     resultlist={}
 
@@ -89,7 +89,7 @@ def wellknownfinder(domain, user_agents=None):
         
         try:
             visited_endpoint = url + i
-            response = requests.get(visited_endpoint, timeout=3)
+            response = requests.get(visited_endpoint,impersonate=bt, timeout=3)
             resultlist[i]={
                 
                 "status-code": response.status_code,

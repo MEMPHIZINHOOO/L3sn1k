@@ -1,8 +1,8 @@
-import requests
+from curl_cffi import requests
 
-def fetchcrt(domain, user_agent=None):
+def fetchcrt(domain, bt="chrome"):
    url = f"https://crt.sh/?q=%25.{domain}"
-   r = requests.get(url)
+   r = requests.get(url,impersonate=bt)
    return r.text
 
 

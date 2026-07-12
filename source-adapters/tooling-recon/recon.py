@@ -1,5 +1,5 @@
 from requestrandomizer import randomizer
-from uas import ua
+import random
 
 
 def get_domain():  #gets the user input (domain)i
@@ -7,9 +7,11 @@ def get_domain():  #gets the user input (domain)i
     return input("Enter your target domain: ")
 
 domain=get_domain()
-uas_list = ua()
 
-request_sequence = randomizer(domain, uas_list)
+options=['chrome', 'firefox', 'safari', 'edge']
+selected=random.choice(options)
+print(f"scan stealth with signature: {selected}")
+request_sequence = randomizer(domain, bt=selected)
 
 print(request_sequence)
 #fetchctr_response =fetchcrt(domain) #runs the adapter for this domain
