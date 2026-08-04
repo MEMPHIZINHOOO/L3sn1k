@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 ctrlc = "3.5.2"
-iced = "0.14.0"
+iced = {version="0.14.0", features=["advanced"] }
 rfd = "0.17.2"
 tokio = {version="1.52.3", features = ["full"] }
 tools = { path = "../tools"}
@@ -14,3 +14,11 @@ proxelar_models = { version = "0.4.7", package = "proxyapi_models" }
 http = "1.4.2"
 anyhow = "1.0.103"
 clap = {version="4.6.1", features = ["derive"]}
+
+rustls = { version = "0.23", default-features = false, features = [
+    "aws-lc-rs",
+    "std",
+    "tls12",
+] }
+iced_aw = "0.14.1"
+

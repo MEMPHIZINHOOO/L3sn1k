@@ -1,23 +1,28 @@
 
 // iced imports
-use iced::{ Alignment, Event, Length, Size, Subscription, Task, event::{self}, keyboard, widget::{Scrollable, button, column, radio, row, rule, scrollable::{Direction, Scrollbar},
+use iced::{ Alignment,  Event, Length, Size, Subscription, Task, event::{self}, keyboard, widget::{Scrollable, button, column, text, radio, row, rule, scrollable::{Direction, Scrollbar},
     // sensor::Key, text},
     }, window};
 use iced::futures::SinkExt;
+use iced_aw::ContextMenu;
 //std imports
-use std::path::PathBuf;
+use std::{ fmt::Debug, path::PathBuf};
 use std::sync::OnceLock;
 use std::sync::Mutex;
+use std::boxed::Box;
 
 use crate::gui::project::choose_file;
-
+use crate::gui::project::ProxyEventWidget;
 //tokio imports
 use tokio::sync::{mpsc::{Receiver, Sender}};
 //proxelar imports
 use proxelar::ProxyEvent;
 
+use proxelar_models::ProxiedRequest;
+
+
 // http imports
-use http::Method;
+use http::{HeaderMap,  Method, Uri, Version};
 
 mod project;
 
@@ -44,6 +49,7 @@ pub struct L3snikGui {
     init_state: InitPage,
     //gui tool page state machine
     project_state: GuiToolPage,
+
     // project seleection structs
     project_selection :Option<u32>,
     //loaded file as a path buf so we do not lose the direct path reference
@@ -53,7 +59,8 @@ pub struct L3snikGui {
 
     //proxy respective vector
     proxy_vector: Vec<ProxyEvent>,
-    //proxy receiver channel
+
+    repeater_vector: Vec<Box<ProxiedRequest>>,
 }
 
 /// message enum for interactions with the widgets
@@ -72,8 +79,12 @@ pub enum Message {
     Proxy,
     //updated proxy message with the newly done events
     UpdatedProxy(ProxyEvent),
+
+    SendToRepeater(Box<ProxiedRequest>),
+    
     // repeater page
     Repeater,
+    ChangeFocusedRepeater(Box<ProxiedRequest>),
     // target page
     Target,
 }
@@ -94,6 +105,7 @@ pub enum GuiToolPage {
     Proxy,
     
 }
+///  match enum to string
 fn match_request_values(method: &Method) -> String {
      match *method {
          Method::OPTIONS => "OPTIONS".to_string(),
@@ -109,7 +121,42 @@ fn match_request_values(method: &Method) -> String {
          _ => "GET".to_string(),
      }
 } 
+//formats a request into a new widget object
+fn format_event(request: Box<ProxiedRequest>) -> iced::Element<'static, Message> {
+            let request_value: String = match_request_values(request.method());
+            let uri_value: &Uri = request.uri();
+            let request_time: i64 = request.time();
+            
+            let uri_path_query = match uri_value.path_and_query() {
+                Some(path_value) => path_value.as_str().to_string(),
+                None => "ERROR: no URL found, check for proxy logging".to_string()
+            };
+            
+            let widget = ProxyEventWidget::new(request,format!("HTTP \t {request_value:?} \t {uri_path_query:?}  {request_time:?}"));
+            ContextMenu::new(
+            widget.clone(),  move || button("send to repeater").on_press(Message::SendToRepeater(widget.get_proxy_event())).into()
+            ).into()
 
+}
+
+fn view_repeater_request(request: Box<ProxiedRequest>) -> iced::Element<'static, Message> {
+    let uri_value: &Uri = request.uri();
+    let request_value: String = match_request_values(request.method());
+    let header_map: &HeaderMap = request.headers();
+    let version: Version = request.version();
+    let _user_agent = header_map.get("User-Agent");
+    
+    let path = uri_value.path();
+    
+    let request_body = request.body();
+    
+    let formatted_head = format!("{request_value}\t {path}\t {version:?}\t \r\n HEADERS NOT IMPLEMENTED YET \r\n {request_body:?}");
+
+    
+
+    
+    text(formatted_head).into()
+}
 ///view_proxy_event formats any given proxyEvent into a Element accepted by iced
 /// in this function we extract the values we want to show to the user in the proxy history
 fn view_proxy_event(event: ProxyEvent) -> iced::Element<'static ,Message> {
@@ -117,41 +164,16 @@ fn view_proxy_event(event: ProxyEvent) -> iced::Element<'static ,Message> {
         //@todo: fix incomplete request complete parameters being shown
         // request complete proxyevent type
          ProxyEvent::RequestComplete {id: _ ,request, .. } => {
-
-            let request_value = match_request_values(request.method());
-            let uri_value = request.uri();
-            let request_time = request.time();
-            
-            let uri_path_query = match uri_value.path_and_query() {
-                Some(path_value) => path_value.as_str().to_string(),
-                None => "ERROR: no URL found, check for proxy logging".to_string()
-            };
-             iced::widget::text(format!("HTTP \t {request_value:?} \t {uri_path_query:?}  {request_time:?}")).into()
+            format_event(request)
          },
          
          ProxyEvent::RequestIntercepted {id: _ ,request } => {
-             let request_value = match_request_values(request.method());
-             let uri_value = request.uri();
-             let request_time = request.time();
-
-             let uri_path_query = match uri_value.path_and_query() {
-                Some(path_value) => path_value.as_str().to_string(),
-                None => "ERROR: no URL found, check for proxy logging".to_string()
-             };
-             iced::widget::text(format!("HTTP \t {request_value:?} \t {uri_path_query:?}  {request_time:?}")).into()
+            format_event(request)
          },
          ProxyEvent::Error { message } => iced::widget::text(format!("{message}")).into(),
 
          ProxyEvent::WebSocketConnected { id: _, request, .. } => {
-             let request_value = match_request_values(request.method());
-             let uri_value = request.uri();
-             let request_time = request.time();
-
-             let uri_path_query = match uri_value.path_and_query() {
-                Some(path_value) => path_value.as_str().to_string(),
-                None => "ERROR: no URL found, check for proxy logging".to_string()
-             };
-             iced::widget::text(format!("WS \t {request_value:?} \t {uri_path_query:?}  {request_time:?}")).into()
+             format_event(request)
          },
         _ => iced::widget::text(format!("non implemented websocket frames and closing")).into(),
     }
@@ -171,6 +193,7 @@ impl L3snikGui {
                     loaded_file: None,
                     loaded_file_string: "".to_string(),
                     proxy_vector: Vec::new(),
+                    repeater_vector: Vec::new(),
                 },
                 Task::none(),
 
@@ -206,6 +229,15 @@ impl L3snikGui {
                            Task::none()
             }
 
+            Message::SendToRepeater(data) => {
+                self.repeater_vector.push(data);
+                Task::none()
+            }
+
+            Message::ChangeFocusedRepeater(_value) => {
+                Task::none()
+            }
+            
             Message::Continue => {
                 self.init_state = InitPage::Project;
                 return window::latest().and_then(Self::resize_window(1600.0, 1080.0))
@@ -281,11 +313,9 @@ impl L3snikGui {
                 match self.project_state {
 
                     GuiToolPage::Proxy => {
-                        // this is not irrefutable, it breaks whenever the error goes empty,
-                        // however I decided to match them as it will be important for error handling without outright killing the gui
                         
                         let proxy_formatted = column(self.proxy_vector.clone().into_iter().map(|value| view_proxy_event(value)));
-                        
+
                         row![
                          column![
                              Scrollable::new(proxy_formatted)
@@ -298,7 +328,16 @@ impl L3snikGui {
                     }
 
                     GuiToolPage::Repeater => {
-                        row![]
+
+                        let _formatted_request = column(self.repeater_vector.clone().into_iter().map(|value| view_repeater_request(value)));
+
+                        let values = row(self.repeater_vector.clone().into_iter().map(|value| button("    ").on_press(Message::ChangeFocusedRepeater(value)).into()));
+                        
+                        row![
+                            column![
+                              row![values]  
+                            ].width(Length::Fill),
+                        ]
                     }
 
                     GuiToolPage::Target => {

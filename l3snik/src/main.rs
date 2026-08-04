@@ -15,7 +15,6 @@ use tokio::main;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
-
 use clap::Parser;
 
 #[derive(Parser)]
@@ -27,6 +26,11 @@ struct Cli {
 
 #[main]
 async fn main() {
+    // explicitly define a provider for TLS 
+    rustls::crypto::aws_lc_rs::default_provider()
+    .install_default()
+    .expect("rustls CryptoProvider was already installed");
+
     let args = Cli::parse();
     println!("port: {:?}, debug: {:?}", args.port, args.debug);
     let debug = args.debug;
