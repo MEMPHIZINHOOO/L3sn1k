@@ -1,11 +1,9 @@
 use std::path::PathBuf;
 use iced::{
-     Border, Color, Element, Length, Rectangle, Shadow, Size, Theme, advanced::{
-        Clipboard, Layout, Text, Widget, layout, mouse, renderer::{self, Quad}, widget::Tree
+     Border, Color, Element, Length, Rectangle, Shadow, Size, Theme,  advanced::{ 
+         Layout, Text, Widget, layout, mouse, renderer::{self, Quad}, widget::Tree
     }, alignment::Vertical, widget::text::{LineHeight, Shaping, Wrapping}
 };
-
-use proxelar::ProxyEvent;
 use proxelar_models::ProxiedRequest;
 
 
@@ -25,28 +23,28 @@ pub fn choose_file() -> Option<PathBuf> {
     rfd::FileDialog::new().add_filter("json file", &["json"],).pick_file()
 }
 
-#[derive(Debug, Clone)]
-enum Message {
-    MyWidgetChosen,
-}
 
 /// selectable proxy event widget for sending into repeater, we need this because it would be far
 /// more difficult to give the information of the event to the repeater for it to be deconstructed
 /// directly from a button widget
+#[derive(Clone, Debug)]
 pub struct ProxyEventWidget {
     proxy_event: Box<ProxiedRequest>,
     request_event_widget: String,
-    pressed_message: Message, 
 }
 
 impl ProxyEventWidget {
-    pub fn new(proxy_event: Box<ProxiedRequest>, request_event_widget: String, pressed_message: Message) -> Self {
-        Self {proxy_event: proxy_event, request_event_widget: request_event_widget, pressed_message: pressed_message}
+    pub fn new(proxy_event: Box<ProxiedRequest>, request_event_widget: String) -> Self {
+        Self {proxy_event: proxy_event, request_event_widget: request_event_widget}
+    }
+
+    pub fn get_proxy_event(&self) -> Box<ProxiedRequest> {
+        self.proxy_event.clone()
     }
 }
 
 // rendering for proxyEventWidget
-impl <Message, Renderer> Widget<Message, Theme, Renderer> for ProxyEventWidget<Message>
+impl <Message, Renderer> Widget<Message, Theme, Renderer> for ProxyEventWidget
 where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
     Message: Clone,
@@ -128,23 +126,6 @@ where
     
     }
 
-    fn update(
-        &mut self,
-        _state: &mut Tree,
-        event: &Event,
-        layout: Layout<'_>,
-        cursor: mouse::Cursor,
-        _renderer: &Renderer,
-        _clipboard: &mut dyn Clipboard,
-        shell: &mut Shell<'_, Message>,
-        _viewport: &Rectangle,
-    ) {
-        if let Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Right)) = event {
-            if cursor.is_over(layout.bounds()) {
-                shell.publish(self.pressed_message.clone());
-            }
-        }
-    }
     
 }
 
@@ -153,7 +134,7 @@ where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
     Message: 'a + Clone,
 {
-    fn from(widget: ProxyEventWidget<Message>) -> Self {
+    fn from(widget: ProxyEventWidget) -> Self {
         Self::new(widget)
     }
 }
