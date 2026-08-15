@@ -1,6 +1,14 @@
 from requestrandomizer import randomizer
 import random
 
+print(r"""
+██╗     ██████╗ ███████╗███╗   ██╗ ██╗██╗  ██╗
+██║     ╚════██╗██╔════╝████╗  ██║███║██║ ██╔╝
+██║      █████╔╝███████╗██╔██╗ ██║╚██║█████╔╝
+██║      ╚═══██╗╚════██║██║╚██╗██║ ██║██╔═██╗
+███████╗██████╔╝███████║██║ ╚████║ ██║██║  ██╗
+╚══════╝╚═════╝ ╚══════╝╚═╝  ╚═══╝ ╚═╝╚═╝  ╚═╝
+""")
 
 def get_domain():  #gets the user input (domain)i
     
@@ -12,6 +20,7 @@ options=['chrome', 'firefox', 'safari', 'edge']
 selected=random.choice(options)
 print(f"scan stealth with signature: {selected}")
 request_sequence = randomizer(domain, bt=selected)
+
 
 print(request_sequence)
 #fetchctr_response =fetchcrt(domain) #runs the adapter for this domain
