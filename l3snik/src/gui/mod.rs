@@ -1,6 +1,5 @@
-
 // iced imports
-use iced::{ Alignment,  Event, Length, Size, Subscription, Task, event::{self}, keyboard, widget::{Scrollable, button, column, text, radio, row, rule, scrollable::{Direction, Scrollbar},
+use iced::{ Alignment,  Event, Length, Size, Subscription, Task, event::{self}, keyboard, widget::{Scrollable, button, column, radio, row, rule, scrollable::{Direction, Scrollbar}, text, text_input
     // sensor::Key, text},
     }, window};
 use iced::futures::SinkExt;
@@ -11,8 +10,7 @@ use std::sync::OnceLock;
 use std::sync::Mutex;
 use std::boxed::Box;
 
-use crate::gui::project::choose_file;
-use crate::gui::project::ProxyEventWidget;
+use crate::gui::project::{choose_file, encode_decode, ProxyEventWidget};
 //tokio imports
 use tokio::sync::{mpsc::{Receiver, Sender}};
 //proxelar imports
@@ -49,9 +47,8 @@ pub struct L3snikGui {
     init_state: InitPage,
     //gui tool page state machine
     project_state: GuiToolPage,
-
     // project seleection structs
-    project_selection :Option<u32>,
+    project_selection: Option<u32>,
     //loaded file as a path buf so we do not lose the direct path reference
     loaded_file: Option<PathBuf>,
     //loaded file as a string
@@ -60,7 +57,17 @@ pub struct L3snikGui {
     //proxy respective vector
     proxy_vector: Vec<ProxyEvent>,
 
+    //repeater vector for proxied requests
     repeater_vector: Vec<Box<ProxiedRequest>>,
+
+    //String content for encoding/decoding
+    encoder_content:  String,
+
+    // encoding decoding selection
+    encoding_selection: Option<u32>,
+
+    // encoding type
+    encoding_type: Option<u32>,
 }
 
 /// message enum for interactions with the widgets
@@ -87,6 +94,15 @@ pub enum Message {
     ChangeFocusedRepeater(Box<ProxiedRequest>),
     // target page
     Target,
+    //encoder page
+    Encoder,
+    // input string message
+    ContentChanged(String),
+    //encode decode state
+    EncodeDecode(u32),
+    // encode decoding type, base64, hex, etc
+    EncodingDecodingType(u32),
+
 }
 
 // two pages, select the project options and the actual project
@@ -103,6 +119,7 @@ pub enum GuiToolPage {
     #[default]
     Target,
     Proxy,
+    Encoder,
     
 }
 ///  match enum to string
@@ -194,6 +211,9 @@ impl L3snikGui {
                     loaded_file_string: "".to_string(),
                     proxy_vector: Vec::new(),
                     repeater_vector: Vec::new(),
+                    encoder_content: "".to_string(),
+                    encoding_selection: Some(0),
+                    encoding_type: None, 
                 },
                 Task::none(),
 
@@ -264,7 +284,26 @@ impl L3snikGui {
                 self.project_state = GuiToolPage::Target;
                 Task::none()    
             }
+
+            Message::Encoder => {
+                self.project_state = GuiToolPage::Encoder;
+                Task::none()
+            }
             
+            Message::ContentChanged(content) => {
+                self.encoder_content = content;
+                Task::none()
+            }
+
+            Message::EncodeDecode(value) => {
+                self.encoding_selection = Some(value);
+                Task::none()
+            }
+
+            Message::EncodingDecodingType(value) => {
+                self.encoding_type = Some(value);
+                Task::none()
+            }
         }
     }
 
@@ -306,6 +345,7 @@ impl L3snikGui {
                     button("Proxy").on_press(Message::Proxy),
                     button("Repeater").on_press(Message::Repeater),
                     button("Target").on_press(Message::Target),
+                    button("Encoder").on_press(Message::Encoder),
                 ].spacing(100),
                 rule::horizontal(10),
 
@@ -342,6 +382,34 @@ impl L3snikGui {
 
                     GuiToolPage::Target => {
                         row![]
+                    }
+                    
+                    GuiToolPage::Encoder => {
+                        row![
+
+                            column![
+                                text_input("Insert here your text to be encoded or decoded", &self.encoder_content)
+                                .on_input(Message::ContentChanged),
+                                text(encode_decode(self.encoder_content.clone(), self.encoding_selection.clone(), self.encoding_type.clone())),
+                            ],
+                            
+                            row![
+                                column![
+                                    radio("Encode", 1, self.encoding_selection, |value| Message::EncodeDecode(value)),
+                                    radio("Decode", 2, self.encoding_selection,|value| Message::EncodeDecode(value)),
+                                    radio("Open encoding options", 1, self.encoding_type, |value| Message::EncodingDecodingType(value)),
+                                    if self.encoding_type >= Some(1)  {
+                                        column![
+                                            radio("base64", 2, self.encoding_type, |value| Message::EncodingDecodingType(value)),
+                                            radio("test 2 ", 3, self.encoding_type, |value| Message::EncodingDecodingType(value)),
+                                        ]
+                                    }
+                                    else {
+                                        column![]
+                                    }                  
+                                ]
+                            ],
+                        ]
                     }
                 }
             ].into()

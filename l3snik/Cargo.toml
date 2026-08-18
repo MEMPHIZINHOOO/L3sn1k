@@ -21,4 +21,5 @@ rustls = { version = "0.23", default-features = false, features = [
     "tls12",
 ] }
 iced_aw = "0.14.1"
+base64 = "0.23.1"
 
