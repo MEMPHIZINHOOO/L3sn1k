@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use base64::prelude::*;
 use iced::{
      Border, Color, Element, Length, Rectangle, Shadow, Size, Theme,  advanced::{ 
          Layout, Text, Widget, layout, mouse, renderer::{self, Quad}, widget::Tree
@@ -23,7 +24,37 @@ pub fn choose_file() -> Option<PathBuf> {
     rfd::FileDialog::new().add_filter("json file", &["json"],).pick_file()
 }
 
+pub fn encode_decode(content: String, encode_decode: Option<u32>, encode_type: Option<u32>) -> String {
 
+    if encode_decode == None {
+        return content;
+    }
+    
+    if encode_decode == Some(1) {
+
+        if encode_type == Some(2) {
+            match BASE64_STANDARD.decode(content.as_bytes()) {
+                Ok(value) => String::from_utf8_lossy(&value).to_string(),
+                Err(_err) => "something went wrong".to_string(), 
+            }
+        }
+
+        else {
+            "nothing implemented for this yet".to_string()
+        }
+    }
+
+    else {
+
+        if encode_type == Some(2) {
+            BASE64_STANDARD.encode(content.as_bytes()) 
+        }
+
+        else {
+            "nothing implemented for this yet".to_string()
+        }
+    }
+}
 /// selectable proxy event widget for sending into repeater, we need this because it would be far
 /// more difficult to give the information of the event to the repeater for it to be deconstructed
 /// directly from a button widget
