@@ -1,11 +1,11 @@
-from crtadapter import fetchcrt
-from securityheaders import getheaders
-from corschecker import corscheck
-from wellknown_files_checker import wellknownfinder
-from httpfetcher import requestit
-from techfingerprinter import techfprinter
-from robotsscan import robotsprinter
-from sitemapscan import sitemapprinter
+from .crtadapter import fetchcrt
+from .securityheaders import getheaders
+from .corschecker import corscheck
+from .wellknown_files_checker import wellknownfinder
+from .httpfetcher import requestit
+from .techfingerprinter import techfprinter
+from .robotsscan import robotsprinter
+from .sitemapscan import sitemapprinter
 import random
 
 def randomizer(domain,bt="chrome"):

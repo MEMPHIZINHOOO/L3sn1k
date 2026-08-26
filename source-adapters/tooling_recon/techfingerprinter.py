@@ -1,4 +1,4 @@
-from httpfetcher import requestit
+from .httpfetcher import requestit
 
 techheaders = [
     #generic server

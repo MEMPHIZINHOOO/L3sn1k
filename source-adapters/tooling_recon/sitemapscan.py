@@ -1,6 +1,6 @@
 from curl_cffi import requests
 
-from wellknown_files_checker import wellknownfinder
+from .wellknown_files_checker import wellknownfinder
 
 def sitemapprinter(domain, bt="chrome"):
         result = wellknownfinder(domain, bt=bt)
